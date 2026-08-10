@@ -1,4 +1,4 @@
 public interface IHarvester
 {
-    void SetHarvestTask(Entity wheat, bool resetTasks = true);
+    void SetHarvestTask(Entity resource, bool resetTasks = true);
 }

@@ -233,7 +233,7 @@ public abstract class Unit : Entity, IMovable, IAttackable
 
         bool targetClose = false;
 
-        if (Target != null || Target.gameObject.activeSelf)
+        if (Target != null && Target.gameObject.activeSelf)
         {
             Vector2 closetPoint = Target.GetComponent<Collider2D>().ClosestPoint(transform.position);
 

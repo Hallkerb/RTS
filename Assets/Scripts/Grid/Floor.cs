@@ -60,6 +60,8 @@ public class Floor : MonoBehaviour
 
     public float GetGridSize() => gridSize;
 
+    public float GetUnitRadius(int i) => unitsRadius[i];
+
     private void initialize()
     {
         for (int i = 0; i < playersSpawnPosPanel.childCount; i++)
@@ -338,8 +340,8 @@ public class Floor : MonoBehaviour
     {
         var fieldClearData = navigationManager.GetFlowField().FieldClearData;
 
-        float objectRadiusSqr = radius * radius;
-        float paddedRadiusSqr = (radius + padding) * (radius + padding);
+        //float objectRadiusSqr = radius * radius;
+        //float paddedRadiusSqr = (radius + padding) * (radius + padding);
 
         Parallel.For(startRow, endRow + 1, row =>
         {
