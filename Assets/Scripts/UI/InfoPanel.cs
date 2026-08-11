@@ -12,6 +12,8 @@ public class InfoPanel : MonoBehaviour
     private TextMeshProUGUI nameText;
     private TextMeshProUGUI descriptionText;
 
+    public GameObject Owner => currentOwner;
+
     void Awake()
     {
         Singlton = this;
@@ -28,7 +30,7 @@ public class InfoPanel : MonoBehaviour
         Move();
 
         if (currentOwner.activeInHierarchy == false)
-            Remove();
+            Remove(currentOwner);
     }
 
     private void Move()
@@ -44,11 +46,15 @@ public class InfoPanel : MonoBehaviour
         nameText.text = name;
         descriptionText.text = description;
 
+        Move();
+
         gameObject.SetActive(true);
     }
 
-    public void Remove()
+    public void Remove(GameObject owner)
     {
+        if (owner != null && owner == currentOwner) return;
+
         currentOwner = null;
 
         gameObject.SetActive(false);
