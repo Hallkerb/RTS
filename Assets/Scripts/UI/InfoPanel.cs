@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -39,7 +38,7 @@ public class InfoPanel : MonoBehaviour
         transform.position = mousePos + Vector2.up * 1.5f;
     }
 
-    public async void SetInfo(GameObject owner, string name, string description)
+    public void SetInfo(GameObject owner, string name, string description)
     {
         currentOwner = owner;
 

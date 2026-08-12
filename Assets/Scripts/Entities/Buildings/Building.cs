@@ -9,13 +9,11 @@ using UnityEngine;
 public abstract class Building : Entity
 {
     protected PlayerController playerController;
-    private Floor floor;
 
     protected override void Awake()
     {
         base.Awake();
 
-        floor = FindFirstObjectByType<Floor>();
         playerController = FindFirstObjectByType<PlayerController>();
     }
 

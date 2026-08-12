@@ -12,7 +12,6 @@ public class PlayerController : MonoBehaviour
     private PlayerUnitsController playerUnitsController;
     private HighlightManager highlightManager;
     [HideInInspector] public UI UserInterface;
-    public Floor Floor { get; private set; }
 
     [SerializeField] private ChooseBox chooseBox;
 
@@ -31,13 +30,12 @@ public class PlayerController : MonoBehaviour
     private BuildingPhantom constructionPhantom;
     private int constrIndex = -1;
 
-    public int GetID() => player.ID;
+    public int PlayerID => player.ID;
 
     void Awake()
     {
         highlightManager = new HighlightManager(this);
         UserInterface = FindFirstObjectByType<UI>();
-        Floor = FindFirstObjectByType<Floor>();
 
         MiniMap.OnDragMap += MoveCameraOnMap;
         MiniMap.OnSetTask += SetTaskOnMap;
@@ -103,8 +101,8 @@ public class PlayerController : MonoBehaviour
     {
         if (player.IsLoss) return;
 
-        Vector2 floorHalfSize = Floor.transform.localScale / 2;
-        Vector3 targetPoistion = Floor.IsCameraInside(new Vector3(mousePosition.x * floorHalfSize.x, mousePosition.y * floorHalfSize.y, Camera.main.transform.position.z)).pos;
+        Vector2 floorHalfSize = Floor.Instance.transform.localScale / 2;
+        Vector3 targetPoistion = Floor.Instance.IsCameraInside(new Vector3(mousePosition.x * floorHalfSize.x, mousePosition.y * floorHalfSize.y, Camera.main.transform.position.z)).pos;
 
         SetСonstructionBuilding();
         playerUnitsController.CmdSetUnitsTasks(UnitChoose.OfType<Unit>().ToArray(), targetPoistion, player.ID);
@@ -134,7 +132,7 @@ public class PlayerController : MonoBehaviour
 
     public void SetChoose(Collider2D collision, bool choose)
     {
-        if (!collision.TryGetComponent(out Entity chosen)) return;
+        if (!collision.TryGetComponent(out Entity chosen) || (chosen.PlayerID != PlayerID && FogOfWarManager.Instance.IsPositionVisible(chosen.transform.position))) return;
 
         switch(chosen)
         {
@@ -274,7 +272,7 @@ public class PlayerController : MonoBehaviour
         Vector3 currentMouseWorld = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         Vector3 difference = dragOriginWorld - currentMouseWorld;
 
-        var cameraMovement = Floor.IsCameraInside(Camera.main.transform.position + difference);
+        var cameraMovement = Floor.Instance.IsCameraInside(Camera.main.transform.position + difference);
 
         if (cameraMovement.inside == false)
             dragOriginWorld = Camera.main.ScreenToWorldPoint(Input.mousePosition);
@@ -284,8 +282,8 @@ public class PlayerController : MonoBehaviour
 
     private void MoveCameraOnMap(Vector2 mousePosition)
     {
-        Vector2 floorHalfSize = Floor.transform.localScale / 2;
-        Vector3 pos = Floor.IsCameraInside(new Vector3(mousePosition.x * floorHalfSize.x, mousePosition.y * floorHalfSize.y, Camera.main.transform.position.z)).pos;
+        Vector2 floorHalfSize = Floor.Instance.transform.localScale / 2;
+        Vector3 pos = Floor.Instance.IsCameraInside(new Vector3(mousePosition.x * floorHalfSize.x, mousePosition.y * floorHalfSize.y, Camera.main.transform.position.z)).pos;
 
         Camera.main.transform.position = pos;
     }

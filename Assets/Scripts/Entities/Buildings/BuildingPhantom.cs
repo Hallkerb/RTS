@@ -7,8 +7,6 @@ using UnityEngine.UI;
 
 public class BuildingPhantom : Entity
 {
-    private Floor floor;
-
     [SerializeField] private Building building;
 
     [SerializeField] private Color[] green;
@@ -29,8 +27,6 @@ public class BuildingPhantom : Entity
         base.Awake();
 
         buildingCollider = GetComponent<Collider2D>();
-
-        floor = FindFirstObjectByType<Floor>();
 
         HP = 1;
     }
@@ -56,7 +52,7 @@ public class BuildingPhantom : Entity
 
     private bool IsPosClear()
     {
-        int layerToIgnore = 1 << floor.gameObject.layer;
+        int layerToIgnore = 1 << Floor.Instance.gameObject.layer;
         int layerToIgnore3 = 1 << 5; // 5 - UI
 
         int combinedLayerMask = layerToIgnore | layerToIgnore3;
@@ -97,7 +93,7 @@ public class BuildingPhantom : Entity
 
         float stepSize = 0.05f;
 
-        Collider2D floorCollider = floor.GetComponent<Collider2D>();
+        Collider2D floorCollider = Floor.Instance.GetComponent<Collider2D>();
 
         float minX = floorCollider.bounds.min.x + halfsizeX - buildingCollider.offset.x + stepSize;
         float maxX = floorCollider.bounds.max.x - halfsizeX - buildingCollider.offset.x - stepSize;

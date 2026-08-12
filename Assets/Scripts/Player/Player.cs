@@ -13,7 +13,6 @@ public class Player : NetworkBehaviour
     private PlayerController controller;
     private PlayerUnitsController unitsController;
     private PlayerEconomy economy;
-    private Floor floor;
 
     [SyncVar] private TownHall townHall;
 
@@ -77,7 +76,6 @@ public class Player : NetworkBehaviour
             menuUI = FindFirstObjectByType<MenuUI>();
         else
         {
-            floor = FindFirstObjectByType<Floor>();
             unitsController = GetComponent<PlayerUnitsController>();
             economy = GetComponent<PlayerEconomy>();
             controller = FindFirstObjectByType<PlayerController>();

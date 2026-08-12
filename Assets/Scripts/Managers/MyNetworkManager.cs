@@ -133,7 +133,7 @@ public class MyNetworkManager : NetworkManager
     [Server]
     private void InitializeTowns()
     {
-        Floor floor = FindFirstObjectByType<Floor>();
+        Floor floor = Floor.Instance;
 
         if (floor == null)
         {

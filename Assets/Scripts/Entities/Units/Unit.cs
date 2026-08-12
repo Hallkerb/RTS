@@ -77,12 +77,17 @@ public abstract class Unit : Entity, IMovable, IAttackable
 
         navigationManager = FindFirstObjectByType<NavigationManager>();
 
-        navigation = new AStar_Navigation(FindFirstObjectByType<Floor>(), this);
-
         Body = transform.Find("Body");
         unitLineRenderer = GetComponent<UnitLineRenderer>();
 
         moveLayerMask = GetLayerMask();
+    }
+
+    protected override void Start()
+    {
+        base.Start();
+
+        navigation = new AStar_Navigation(Floor.Instance, this);
     }
 
     void Update()

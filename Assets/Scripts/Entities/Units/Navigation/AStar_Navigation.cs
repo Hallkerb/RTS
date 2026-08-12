@@ -38,9 +38,9 @@ public class AStar_Navigation
     private Node SearchWayPoints(HashSet<Node> openSet, HashSet<Node> closedSet, Node startNode, Node endNode)
     {
         int iteration = 0;
-        int minIterationsToProgressCounter = 100;
-        int noProgressCounter = 0;
-        int maxNoProgressIterations = 2000;
+        // int minIterationsToProgressCounter = 100;
+        // int noProgressCounter = 0;
+        // int maxNoProgressIterations = 2000;
 
         startNode.g = 0;
         startNode.parent = null;

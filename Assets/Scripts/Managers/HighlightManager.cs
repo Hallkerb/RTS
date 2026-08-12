@@ -9,7 +9,7 @@ public class HighlightManager
 
     public void HighlightEnemy(Unit unit, Entity target, bool choose)
     {
-        if (target == null || unit.PlayerID != playerController.GetID() || target.PlayerID == playerController.GetID()) return;
+        if (target == null || unit.PlayerID != playerController.PlayerID || target.PlayerID == playerController.PlayerID) return;
 
         if (highlightedEnemies.ContainsKey(target))
         {

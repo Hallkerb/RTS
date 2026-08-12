@@ -9,6 +9,8 @@ using UnityEngine;
 
 public class Floor : MonoBehaviour
 {
+    public static Floor Instance;
+
     public MapGenerator MapGenerator { get; private set; }
     private NavigationManager navigationManager; 
     private Collider2D сollider;
@@ -32,6 +34,8 @@ public class Floor : MonoBehaviour
 
     void Awake()
     {
+        Instance = this;
+
         if(!NetworkServer.active) return;
 
         MapGenerator = GetComponent<MapGenerator>();

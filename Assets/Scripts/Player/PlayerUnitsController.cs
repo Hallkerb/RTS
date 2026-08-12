@@ -15,7 +15,11 @@ public class PlayerUnitsController : NetworkBehaviour
     {
         player = GetComponent<Player>();
         navigationManager = FindFirstObjectByType<NavigationManager>();
-        floor = FindFirstObjectByType<Floor>();
+    }
+
+    void Start()
+    {
+        floor = Floor.Instance;
     }
 
     [Command]
