@@ -60,7 +60,7 @@ public class Worker : Unit, IBuilder, IHarvester
     {
         if (Target == null || !Target.gameObject.activeSelf)
         {
-            Tasks.Dequeue();
+            DequeueTask();
             return;
         }
 
@@ -83,7 +83,7 @@ public class Worker : Unit, IBuilder, IHarvester
     {
         if (Target == null || !Target.gameObject.activeSelf)
         {
-            Tasks.Dequeue();
+            DequeueTask();
             return;
         }
 

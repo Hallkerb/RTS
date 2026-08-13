@@ -267,7 +267,7 @@ public abstract class Unit : Entity, IMovable, IAttackable
                 var task = Tasks.Peek();
 
                 if (task.Item1.Method.Name == nameof(Move))
-                    Tasks.Dequeue();
+                    DequeueTask();
             }
         }
     }
@@ -375,7 +375,7 @@ public abstract class Unit : Entity, IMovable, IAttackable
     {
         if (Target == null || !Target.gameObject.activeSelf)
         {
-            Tasks.Dequeue();
+            DequeueTask();
             return;
         }
 
@@ -432,6 +432,51 @@ public abstract class Unit : Entity, IMovable, IAttackable
 
         if (Tasks.Count <= 0 && Target == null)
             SetAttackTask(enemy, false);
+    }
+
+    protected virtual void DequeueTask()
+    {
+        var task = Tasks.Dequeue();
+
+        if (Tasks.Count < 1)
+            TryAutoContinueTask(task);
+    }
+
+    protected virtual void TryAutoContinueTask((Action task, Entity target) completedTask)
+    {
+        if (completedTask.task.Method.Name == nameof(PerformAttack))
+        {
+            Entity newTarget = FindNearestEnemyInViewingCircle();
+        
+            SetAttackTask(newTarget);
+        }
+    }
+
+    private Entity FindNearestEnemyInViewingCircle()
+    {
+        Transform viewingCircle = transform.Find("ViewingCircle");
+        float radius = viewingCircle.lossyScale.x / 2;
+
+        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, radius, 1 << 7 | 1 << 8);
+
+        Entity nearestEnemy = null;
+        float minDistance = float.MaxValue;
+
+        foreach (var hit in hits)
+        {
+            if (hit.TryGetComponent(out Entity target) && target.PlayerID != PlayerID)
+            {
+                float distance = Vector2.Distance(transform.position, hit.transform.position);
+                
+                if (distance < minDistance)
+                {
+                    minDistance = distance;
+                    nearestEnemy = target;
+                }
+            }
+        }
+
+        return nearestEnemy;
     }
 
     public override void ResetState()
