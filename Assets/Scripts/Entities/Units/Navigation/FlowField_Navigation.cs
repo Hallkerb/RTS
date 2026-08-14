@@ -568,7 +568,9 @@ public class FlowField_Navigation
 
     public void Dispose()
     {
-        Parallel.ForEach(FieldDatas, fd => { fd.Dispose(); });
+        foreach (var fd in FieldDatas)
+            fd.Dispose();
+
         FieldClearData.Dispose();
 
         if (offsets.IsCreated)

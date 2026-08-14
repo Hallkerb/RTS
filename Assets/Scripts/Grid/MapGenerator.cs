@@ -176,13 +176,13 @@ public class MapGenerator : MonoBehaviour
 
     private void SpawnTree(Vector2 position)
     {
-        var tree = SpawnerManager.Singlton.Spawn(treePrefab, position, Quaternion.identity);
+        var tree = SpawnerManager.Instance.Spawn(treePrefab, position, Quaternion.identity);
         _spawnedTrees.Add(tree);
     }
 
     private void SpawnIron(Vector2 position)
     {
-        var iron = SpawnerManager.Singlton.Spawn(ironPrefab, position, Quaternion.identity);
+        var iron = SpawnerManager.Instance.Spawn(ironPrefab, position, Quaternion.identity);
         _spawnedIron.Add(iron);
     }
 

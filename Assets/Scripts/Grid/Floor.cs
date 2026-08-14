@@ -14,7 +14,9 @@ public class Floor : MonoBehaviour
     public MapGenerator MapGenerator { get; private set; }
     private NavigationManager navigationManager; 
     private Collider2D сollider;
-    private Transform spawnParent;
+    [SerializeField] private Transform spawnParent;
+
+    public Transform SpawnParent => spawnParent;
 
     [SerializeField] private float[] unitsRadius;
 
@@ -41,7 +43,6 @@ public class Floor : MonoBehaviour
         MapGenerator = GetComponent<MapGenerator>();
         navigationManager = FindFirstObjectByType<NavigationManager>();
         сollider = GetComponent<Collider2D>();
-        spawnParent = transform.Find("EntityManager");
 
         PlayersSpawnPos = new Transform[playersSpawnPosPanel.childCount];
 
@@ -56,8 +57,8 @@ public class Floor : MonoBehaviour
     void Start()
     {
         if (!NetworkServer.active) return;
-        
-        SpawnerManager.Singlton.OnSpawn += ReactOnSpawn;
+
+        SpawnerManager.Instance.OnSpawn += ReactOnSpawn;
 
         StartCoroutine(GenerateMap());
     }
@@ -202,12 +203,11 @@ public class Floor : MonoBehaviour
         return (point, inside);
     }
 
-    private void ReactOnSpawn(Entity entity)
+    private void ReactOnSpawn(GameObject obj)
     {
-        entity.transform.SetParent(spawnParent);
-
-        if (entity.TryGetComponent(out Building building) || (entity.TryGetComponent(out Resource resource) && resource.Type != ResourceType.Food))
+        if (obj.TryGetComponent(out Building building) || (obj.TryGetComponent(out Resource resource) && resource.Type != ResourceType.Food))
         {
+            Entity entity = obj.GetComponent<Entity>();
             entity.OnDeath += ReactOnDestroy;
 
             AsyncEvaluateCollidersNode(entity, true).ContinueWith(t =>

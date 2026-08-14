@@ -114,7 +114,7 @@ public class MyNetworkManager : NetworkManager
     {
         if (scene.name == "Game")
         {
-            if (NetworkServer.active && SpawnerManager.Singlton == null)
+            if (NetworkServer.active && SpawnerManager.Instance == null)
             {
                 var sm = Instantiate(spawnerManagerPrefub, transform.position, Quaternion.identity);
                 NetworkServer.Spawn(sm.gameObject);
@@ -159,7 +159,7 @@ public class MyNetworkManager : NetworkManager
 
             Transform playersSpawnPos = floor.PlayersSpawnPos[conn.connectionId];
             
-            var th = SpawnerManager.Singlton.Spawn(townHallPrefub.GetComponent<Entity>(), playersSpawnPos.position, playersSpawnPos.rotation, conn).GetComponent<TownHall>();
+            var th = SpawnerManager.Instance.Spawn(townHallPrefub.GetComponent<Entity>(), playersSpawnPos.position, playersSpawnPos.rotation, conn).GetComponent<TownHall>();
             spawnedTownHalls[conn.connectionId] = th;
         }
     }

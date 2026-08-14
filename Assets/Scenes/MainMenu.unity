@@ -5027,6 +5027,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1857129991}
   - component: {fileID: 1857129994}
+  - component: {fileID: 1857129995}
   - component: {fileID: 1857129993}
   m_Layer: 0
   m_Name: NetworkManager
@@ -5104,20 +5105,7 @@ MonoBehaviour:
   autoCreatePlayer: 1
   playerSpawnMethod: 0
   spawnPrefabs:
-  - {fileID: 1646596059198448855, guid: 2e27890a16eb2294698da61d2fa9cb41, type: 3}
-  - {fileID: 6800319269768309871, guid: aa4a83074f221114e95ce46d57975886, type: 3}
-  - {fileID: 8411865202829712631, guid: 5733b1aaa89b16245812a29c0a2bc8ac, type: 3}
-  - {fileID: 3804208303768452326, guid: ab85df27af27c9e4e9ef8640f2ce203a, type: 3}
-  - {fileID: 1316013947361683930, guid: 6aaefa19e6bbc06449a5773ec6195e3b, type: 3}
-  - {fileID: 5296919541376202381, guid: d631d3bc802a9a7489c58dfaa3ae53e6, type: 3}
-  - {fileID: 4173969868690395568, guid: a5bad8ec99be7b041a3d1693d9ddb0cc, type: 3}
-  - {fileID: 6405734033062026649, guid: 092b5150ed638b84b9d64f0c0896be92, type: 3}
   - {fileID: 8943755954960682145, guid: 29814394b5e9da1489fb5b1c37e6ba65, type: 3}
-  - {fileID: 2757615248541934544, guid: b250b108478bb5240a3474ed694659c8, type: 3}
-  - {fileID: 2821115388011440340, guid: f5dff7ba71b810c4da5107b9f9011610, type: 3}
-  - {fileID: 3675349025137404468, guid: 45c2b01e9d5fbfc4d9305768a32b784e, type: 3}
-  - {fileID: 5269359543461212977, guid: 4c21e14a7962b014eafeef99d2131831, type: 3}
-  - {fileID: 8023531275418826598, guid: d88511ac1eab55f4591ca9248c397a90, type: 3}
   exceptionsDisconnect: 1
   snapshotSettings:
     bufferTimeMultiplier: 2
@@ -5135,6 +5123,31 @@ MonoBehaviour:
   timeInterpolationGui: 0
   spawnerManagerPrefub: {fileID: 7990409837293254736, guid: 29814394b5e9da1489fb5b1c37e6ba65, type: 3}
   townHallPrefub: {fileID: 2388859981142752937, guid: 2e27890a16eb2294698da61d2fa9cb41, type: 3}
+--- !u!114 &1857129995
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1857129989}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bdd04bb7e2787b64ba38ac5fa0741d64, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ObjectPooler
+  prefubs:
+  - {fileID: 1646596059198448855, guid: 2e27890a16eb2294698da61d2fa9cb41, type: 3}
+  - {fileID: 6800319269768309871, guid: aa4a83074f221114e95ce46d57975886, type: 3}
+  - {fileID: 8411865202829712631, guid: 5733b1aaa89b16245812a29c0a2bc8ac, type: 3}
+  - {fileID: 3804208303768452326, guid: ab85df27af27c9e4e9ef8640f2ce203a, type: 3}
+  - {fileID: 1316013947361683930, guid: 6aaefa19e6bbc06449a5773ec6195e3b, type: 3}
+  - {fileID: 5296919541376202381, guid: d631d3bc802a9a7489c58dfaa3ae53e6, type: 3}
+  - {fileID: 6405734033062026649, guid: 092b5150ed638b84b9d64f0c0896be92, type: 3}
+  - {fileID: 2757615248541934544, guid: b250b108478bb5240a3474ed694659c8, type: 3}
+  - {fileID: 2821115388011440340, guid: f5dff7ba71b810c4da5107b9f9011610, type: 3}
+  - {fileID: 3675349025137404468, guid: 45c2b01e9d5fbfc4d9305768a32b784e, type: 3}
+  - {fileID: 5269359543461212977, guid: 4c21e14a7962b014eafeef99d2131831, type: 3}
+  - {fileID: 8023531275418826598, guid: d88511ac1eab55f4591ca9248c397a90, type: 3}
 --- !u!1 &1941411968
 GameObject:
   m_ObjectHideFlags: 0

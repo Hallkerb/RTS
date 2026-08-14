@@ -158,7 +158,7 @@ public class BuildingPhantom : Entity
 
     private void ConstructBuilding()
     {
-        SpawnerManager.Singlton.Spawn(building, transform.position, Quaternion.identity, PlayerID, connectionToClient);
+        SpawnerManager.Instance.Spawn(building, transform.position, Quaternion.identity, PlayerID, connectionToClient);
 
         Destruction();
     }

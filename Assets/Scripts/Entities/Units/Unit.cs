@@ -454,8 +454,7 @@ public abstract class Unit : Entity, IMovable, IAttackable
 
     private Entity FindNearestEnemyInViewingCircle()
     {
-        Transform viewingCircle = transform.Find("ViewingCircle");
-        float radius = viewingCircle.lossyScale.x / 2;
+        float radius = ViewingRadius;
 
         Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, radius, 1 << 7 | 1 << 8);
 

@@ -135,7 +135,7 @@ public class Player : NetworkBehaviour
     private void CmdPlaceConstruct(List<Unit> unitChoose, bool resetTasks, int index, Vector2 pos)
     {
         var phantomPrefub = controller.UserInterface.BuildingsUI.GetBuilding(index);
-        BuildingPhantom newBuilding = SpawnerManager.Singlton.Spawn(phantomPrefub, pos, Quaternion.identity, ID, connectionToClient) as BuildingPhantom;
+        BuildingPhantom newBuilding = SpawnerManager.Instance.Spawn(phantomPrefub, pos, Quaternion.identity, ID, connectionToClient) as BuildingPhantom;
 
         unitsController.SetUnitsBuilding(unitChoose, newBuilding, ID, resetTasks);
         newBuilding.StartConstruct();

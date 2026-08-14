@@ -273,9 +273,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6aca38d625e690b478621e5565b51094, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EntityTeamView
-  teamImages:
-  - {fileID: 0}
-  - {fileID: 0}
+  teamSprites: []
   teamMapIcon: {fileID: 0}
 --- !u!58 &1669131143416880467
 CircleCollider2D:
@@ -488,8 +486,8 @@ MonoBehaviour:
   onlySyncOnChange: 1
   compressRotation: 1
   interpolatePosition: 1
-  interpolateRotation: 1
-  interpolateScale: 1
+  interpolateRotation: 0
+  interpolateScale: 0
   coordinateSpace: 0
   timelineOffset: 1
   showGizmos: 0

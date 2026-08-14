@@ -4,23 +4,23 @@ using UnityEngine;
 
 public class SpawnerManager : NetworkBehaviour
 {
-    public static SpawnerManager Singlton;
+    public static SpawnerManager Instance;
 
-    public event Action<Entity> OnSpawn;
+    public event Action<GameObject> OnSpawn;
 
     void Awake()
     {
-        Singlton = this;
+        Instance = this;
     }
 
     [Server]
     public Entity Spawn(Entity entity, Vector2 position, Quaternion quaternion, int playerID, NetworkConnectionToClient conn)
     {
         Entity obj = ObjectPooler.Instance.Get(entity.gameObject, position, quaternion).GetComponent<Entity>();
-        NetworkServer.Spawn(obj.gameObject, conn);
         obj.Initialize(playerID);
+        NetworkServer.Spawn(obj.gameObject, conn);
 
-        OnSpawn?.Invoke(obj);
+        OnSpawn?.Invoke(obj.gameObject);
 
         return obj;
     }
@@ -28,22 +28,22 @@ public class SpawnerManager : NetworkBehaviour
     [Server]
     public Entity Spawn(Entity entity, Vector2 position, Quaternion quaternion, NetworkConnectionToClient conn)
     {
-        Entity obj = ObjectPooler.Instance.Get(entity.gameObject, position, quaternion).GetComponent<Entity>();
-        NetworkServer.Spawn(obj.gameObject, conn);
+        GameObject obj = ObjectPooler.Instance.Get(entity.gameObject, position, quaternion);
+        NetworkServer.Spawn(obj, conn);
 
         OnSpawn?.Invoke(obj);
 
-        return obj;
+        return obj.GetComponent<Entity>();
     }
 
     [Server]
     public Entity Spawn(Entity entity, Vector2 position, Quaternion quaternion)
     {
-        Entity obj = ObjectPooler.Instance.Get(entity.gameObject, position, quaternion).GetComponent<Entity>();
-        NetworkServer.Spawn(obj.gameObject);
+        GameObject obj = ObjectPooler.Instance.Get(entity.gameObject, position, quaternion);
+        NetworkServer.Spawn(obj);
 
         OnSpawn?.Invoke(obj);
 
-        return obj;
+        return obj.GetComponent<Entity>();
     }
 }

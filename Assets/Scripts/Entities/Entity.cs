@@ -14,11 +14,13 @@ public class EntityData
     public string Name => name;
 }
 
-public abstract class Entity : NetworkBehaviour
+public abstract class Entity : NetworkBehaviour, IPoolable
 {
     protected Entity Prefub;
     [SerializeField] private EntityData data;
     private EntityShape shape;
+
+    protected Rigidbody2D rb;
 
     private GameObject isChooseObj;
     private GameObject isTargetObj;
@@ -83,6 +85,9 @@ public abstract class Entity : NetworkBehaviour
         float SizeY = сollider.bounds.max.y - сollider.bounds.min.y;
 
         shape = new EntityShape(shapeType, SizeX, SizeY);
+
+        if (TryGetComponent(out Rigidbody2D rigidbody))
+            rb = rigidbody;
 
         Transform ui = transform.Find("UI");
 
@@ -203,9 +208,23 @@ public abstract class Entity : NetworkBehaviour
 
     public virtual void ResetState()
     {
-        gameObject.layer = Prefub.gameObject.layer;
-        hp = Prefub.HP;
-        startHP = hp;
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector2.zero;
+            rb.angularVelocity = 0;
+        }
+
+        if (TryGetComponent(out NetworkTransformBase networkTransform))
+        {
+            networkTransform.Reset();
+        }
+
+        if (Prefub != null)
+        {
+            gameObject.layer = Prefub.gameObject.layer;
+            hp = Prefub.HP;
+            startHP = hp;
+        }
     }
 
     public virtual async void LocalDestruction()
@@ -213,8 +232,6 @@ public abstract class Entity : NetworkBehaviour
         OnDeath?.Invoke(this);
 
         await Task.Yield();
-
-        ResetState();
         ObjectPooler.Instance.SetToPool(gameObject);
     }
 
@@ -227,7 +244,6 @@ public abstract class Entity : NetworkBehaviour
 
         await Task.Yield();
 
-        ResetState();
         UnSpawn();
     }
 

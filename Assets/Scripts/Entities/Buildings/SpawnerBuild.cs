@@ -59,7 +59,7 @@ public class SpawnerBuild : Building
 
     public void SpawnEntity(Entity entity)
     {
-        SpawnerManager.Singlton.Spawn(entity, spawnPoint, Quaternion.identity, PlayerID, connectionToClient);
+        SpawnerManager.Instance.Spawn(entity, spawnPoint, Quaternion.identity, PlayerID, connectionToClient);
     }
 
     private IEnumerator timerToSpawn()
