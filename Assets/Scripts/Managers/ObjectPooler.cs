@@ -66,6 +66,9 @@ public class ObjectPooler : MonoBehaviour
             obj = _pools[prefab].Pop();
             obj.transform.position = position;
             obj.transform.rotation = quaternion;
+
+            if (obj.TryGetComponent(out IPoolable poolableObj))
+                poolableObj.ResetState();
         }
         else
         {
@@ -73,11 +76,6 @@ public class ObjectPooler : MonoBehaviour
 
             var poolable = obj.GetComponent<PoolableObject>() ?? obj.AddComponent<PoolableObject>();
             poolable.OriginPrefab = prefab;
-        }
-
-        if (obj.TryGetComponent(out IPoolable poolableObj))
-        {
-            poolableObj.ResetState();
         }
 
         obj.SetActive(true);

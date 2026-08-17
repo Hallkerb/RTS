@@ -234,7 +234,11 @@ public abstract class Unit : Entity, IMovable, IAttackable
 
         RotateRpc(finalMove);
 
+        Debug.Log("Move: " + finalMove + "    position: " + transform.position);
+
         transform.position += (Vector3)finalMove;
+
+        Debug.Log("new position: " + transform.position);
 
         bool targetClose = false;
 

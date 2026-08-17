@@ -214,11 +214,6 @@ public abstract class Entity : NetworkBehaviour, IPoolable
             rb.angularVelocity = 0;
         }
 
-        if (TryGetComponent(out NetworkTransformBase networkTransform))
-        {
-            networkTransform.Reset();
-        }
-
         if (Prefub != null)
         {
             gameObject.layer = Prefub.gameObject.layer;

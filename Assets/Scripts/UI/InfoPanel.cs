@@ -34,8 +34,11 @@ public class InfoPanel : MonoBehaviour
 
     private void Move()
     {
-        Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        transform.position = mousePos + Vector2.up * 1.5f;
+        Vector3 screenMousePos = Input.mousePosition;
+        screenMousePos.y += 60f;
+
+        Vector2 mousePos = Camera.main.ScreenToWorldPoint(screenMousePos);
+        transform.position = mousePos;
     }
 
     public void SetInfo(GameObject owner, string name, string description)

@@ -10,15 +10,21 @@ public enum ResourceType
 
 public class PlayerEconomy : NetworkBehaviour
 {
-    [SyncVar] private int _food = 500;
-    [SyncVar] private int _materials = 500;
-    [SyncVar] private int _iron = 0;
+    [SyncVar(hook = nameof(OnFoodChanged))] private int _food = 500;
+    [SyncVar(hook = nameof(OnMaterialsChanged))] private int _materials = 500;
+    [SyncVar(hook = nameof(OnIronChanged))] private int _iron = 0;
 
     public int Food => _food;
     public int Materials => _materials;
     public int Iron => _iron;
 
     public event Action<(ResourceType, int)[]> OnResourceChanged;
+
+    private void OnFoodChanged(int oldValue, int newValue) => OnResourceChanged?.Invoke(new[] { (ResourceType.Food, newValue) });
+
+    private void OnMaterialsChanged(int oldValue, int newValue) => OnResourceChanged?.Invoke(new[] { (ResourceType.Materials, newValue) });
+
+    private void OnIronChanged(int oldValue, int newValue) => OnResourceChanged?.Invoke(new[] { (ResourceType.Iron, newValue) });
 
     private int GetResource(ResourceType resource)
     {
@@ -49,8 +55,6 @@ public class PlayerEconomy : NetworkBehaviour
                 break;
         }
 
-        TargetChangeResources(connectionToClient, resource);
-
         return true;
     }
 
@@ -73,9 +77,6 @@ public class PlayerEconomy : NetworkBehaviour
         foreach (var r in resources)
             SpendResource((r.type, r.count));
 
-        ResourceType[] changedTypes = totals.Keys.ToArray();
-        TargetChangeResources(connectionToClient, changedTypes);
-
         return true;
     }
 
@@ -93,16 +94,5 @@ public class PlayerEconomy : NetworkBehaviour
                 _iron -= resource.count;
                 break;
         }
-    }
-
-    [TargetRpc]
-    private void TargetChangeResources(NetworkConnection target, params ResourceType[] types)
-    {
-        var updates = new (ResourceType, int)[types.Length];
-
-        for (int i = 0; i < types.Length; i++)
-            updates[i] = (types[i], GetResource(types[i]));
-
-        OnResourceChanged?.Invoke(updates);
     }
 }

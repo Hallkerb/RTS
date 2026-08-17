@@ -313,8 +313,8 @@ public class PlayerController : MonoBehaviour
         {
             var exitButton = UserInterface.exitGamePanel.transform.Find("Exit_Button").GetComponent<Button>();
 
-            exitButton.onClick.AddListener(player.StopClient);
             exitButton.onClick.AddListener(playerUnitsController.DisposeNavigationManager);
+            exitButton.onClick.AddListener(player.StopClient);
         }
 
         this.player.OnWin += Win;
