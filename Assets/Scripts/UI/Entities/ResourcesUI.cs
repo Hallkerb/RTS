@@ -9,34 +9,6 @@ public class ResourcesUI : MonoBehaviour
     private TextMeshProUGUI materials;
     private TextMeshProUGUI iron;
 
-    void Awake()
-    {
-        food = transform.Find("Food_Text").GetComponent<TextMeshProUGUI>();
-        materials = transform.Find("Materials_Text").GetComponent<TextMeshProUGUI>();
-        iron = transform.Find("Iron_Text").GetComponent<TextMeshProUGUI>();
-    }
-
-    void Start()
-    {
-        StartCoroutine(searchPlayer());
-    }
-
-    private IEnumerator searchPlayer()
-    {
-        PlayerEconomy playerEconomy = null;
-
-        while(playerEconomy == null)
-        {
-            playerEconomy = FindFirstObjectByType<PlayerEconomy>();
-            
-            yield return null;
-        }
-
-        ChangeResources((ResourceType.Food, playerEconomy.Food), (ResourceType.Materials, playerEconomy.Materials), (ResourceType.Iron, playerEconomy.Iron));
-
-        playerEconomy.OnResourceChanged += ChangeResources;
-    }
-
     public void ChangeResources(params (ResourceType type, int count)[] resources)
     {
         foreach(var resource in resources)
@@ -54,5 +26,16 @@ public class ResourcesUI : MonoBehaviour
                     break;
             }
         }
+    }
+
+    public void Initialize(PlayerEconomy playerEconomy)
+    {
+        food = transform.Find("Food_Text").GetComponent<TextMeshProUGUI>();
+        materials = transform.Find("Materials_Text").GetComponent<TextMeshProUGUI>();
+        iron = transform.Find("Iron_Text").GetComponent<TextMeshProUGUI>();
+
+        ChangeResources((ResourceType.Food, playerEconomy.Food), (ResourceType.Materials, playerEconomy.Materials), (ResourceType.Iron, playerEconomy.Iron));
+
+        playerEconomy.OnResourceChanged += ChangeResources;
     }
 }

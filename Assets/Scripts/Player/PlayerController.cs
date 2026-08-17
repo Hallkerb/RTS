@@ -8,7 +8,7 @@ using UnityEngine.UI;
 
 public class PlayerController : MonoBehaviour
 {
-    public Player player;
+    private Player player;
     private PlayerUnitsController playerUnitsController;
     private HighlightManager highlightManager;
     [HideInInspector] public UI UserInterface;
@@ -29,6 +29,8 @@ public class PlayerController : MonoBehaviour
 
     private BuildingPhantom constructionPhantom;
     private int constrIndex = -1;
+
+    public Player Player => player;
 
     public int PlayerID => player.ID;
 
@@ -319,5 +321,7 @@ public class PlayerController : MonoBehaviour
 
         this.player.OnWin += Win;
         this.player.OnLose += Lose;
+
+        FindFirstObjectByType<ResourcesUI>().Initialize(player.GetPlayerEconomy());
     }
 }
