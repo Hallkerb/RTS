@@ -231,24 +231,20 @@ public abstract class Entity : NetworkBehaviour, IPoolable
     }
 
     [Server]
-    public virtual async void Destruction()
+    public virtual void Destruction()
     {
         OnDeath?.Invoke(this);
-        
-        RpcNotifyDeath();
-
-        await Task.Yield();
 
         UnSpawn();
     }
 
-    [ClientRpc]
-    private void RpcNotifyDeath()
-    {
-        if (isServer) return;
-
-        OnDeath?.Invoke(this);
-    }
-
     protected void UnSpawn() => NetworkServer.UnSpawn(gameObject);
+
+    public override void OnStopClient()
+    {
+        if (!isServer)
+            OnDeath?.Invoke(this);
+
+        base.OnStopClient();
+    }
 }

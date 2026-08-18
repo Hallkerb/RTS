@@ -110,7 +110,7 @@ public class BuildingPhantom : Entity
     {
         if(PosClear)
         {
-            player.PlaceConstruct(resetTasks, index, transform.position);
+            player.BuildingsManager.PlaceConstruct(resetTasks, index, transform.position);
 
             if (TryGetComponent<NetworkIdentity>(out var netIdentity))
             {

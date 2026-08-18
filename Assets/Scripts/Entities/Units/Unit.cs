@@ -234,11 +234,7 @@ public abstract class Unit : Entity, IMovable, IAttackable
 
         RotateRpc(finalMove);
 
-        Debug.Log("Move: " + finalMove + "    position: " + transform.position);
-
         transform.position += (Vector3)finalMove;
-
-        Debug.Log("new position: " + transform.position);
 
         bool targetClose = false;
 
@@ -367,9 +363,8 @@ public abstract class Unit : Entity, IMovable, IAttackable
         int layer3 = 1 << 6; // 6 - Units
         int layer4 = 1 << 8; // 8 - Constructions
         int layer5 = 1 << 10; // 10 - Map
-        int layer6 = 1 << 14; // 14 - Wheat
 
-        int combinedLayerMask = layer | layer2 | layer3 | layer4 | layer5 | layer6;
+        int combinedLayerMask = layer | layer2 | layer3 | layer4 | layer5;
 
         return combinedLayerMask;
     }
@@ -448,19 +443,29 @@ public abstract class Unit : Entity, IMovable, IAttackable
 
     protected virtual void TryAutoContinueTask((Action task, Entity target) completedTask)
     {
-        if (completedTask.task.Method.Name == nameof(PerformAttack))
+        string methodName = completedTask.task.Method.Name;
+
+        switch (methodName)
         {
-            Entity newTarget = FindNearestEnemyInViewingCircle();
-        
-            SetAttackTask(newTarget);
+            case nameof(PerformAttack):
+                Entity newTarget = FindNearestEnemyInViewingCircle();
+                SetAttackTask(newTarget);
+                break;
+            case nameof(Move):
+                break;
+            default:
+                TryHandleCustomTask(completedTask, methodName);
+                break;
         }
     }
 
-    private Entity FindNearestEnemyInViewingCircle()
+    protected virtual void TryHandleCustomTask((Action task, Entity target) completedTask, string methodName) { }
+
+    protected Entity FindNearestEnemyInViewingCircle()
     {
         float radius = ViewingRadius;
 
-        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, radius, 1 << 7 | 1 << 8);
+        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, radius, 1 << 6 | 1 << 7 | 1 << 8);
 
         Entity nearestEnemy = null;
         float minDistance = float.MaxValue;

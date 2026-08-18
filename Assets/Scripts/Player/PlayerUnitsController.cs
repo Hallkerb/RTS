@@ -34,9 +34,8 @@ public class PlayerUnitsController : NetworkBehaviour
             int buildingLayer = 1 << 7; // 7 - Buildings
             int constructionLayer = 1 << 8; // 8 - Constructions
             int resourceLayer = 1 << 13; // 13 - Resources
-            int wheatLayer = 1 << 14; // 14 - Wheat
 
-            int combinedLayerMask = floorLayer | unitLayer | buildingLayer | constructionLayer | resourceLayer | wheatLayer;
+            int combinedLayerMask = floorLayer | unitLayer | buildingLayer | constructionLayer | resourceLayer;
 
             Collider2D[] hit;
 
@@ -46,7 +45,7 @@ public class PlayerUnitsController : NetworkBehaviour
             {
                 hit = hit.OrderByDescending(c => c.TryGetComponent(out Entity target) && target.PlayerID != playerID)
                         .ThenByDescending(c => c.gameObject.layer == 8).ThenByDescending(c => c.gameObject.layer == 13)
-                        .ThenByDescending(c => c.gameObject.layer == 14).ThenByDescending(c => c.gameObject.layer == 3).ToArray();
+                        .ThenByDescending(c => c.gameObject.layer == 3).ToArray();
 
                 switch (hit[0].gameObject)
                 {

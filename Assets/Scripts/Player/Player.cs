@@ -12,6 +12,7 @@ public class Player : NetworkBehaviour
 
     private PlayerController controller;
     private PlayerUnitsController unitsController;
+    private PlayerBuildingsManager buildingsManager;
     private PlayerEconomy economy;
 
     [SyncVar] private TownHall townHall;
@@ -66,9 +67,10 @@ public class Player : NetworkBehaviour
         private set => _IsInitialized = value;
     }
 
-    public PlayerUnitsController GetPlayerUnitsController() => unitsController;
-
-    public PlayerEconomy GetPlayerEconomy() => economy;
+    public PlayerUnitsController UnitsController => unitsController;
+    public PlayerEconomy Economy => economy;
+    public PlayerController Controller => controller;
+    public PlayerBuildingsManager BuildingsManager => buildingsManager;
 
     void Awake()
     {
@@ -78,6 +80,7 @@ public class Player : NetworkBehaviour
         {
             unitsController = GetComponent<PlayerUnitsController>();
             economy = GetComponent<PlayerEconomy>();
+            buildingsManager = GetComponent<PlayerBuildingsManager>();
             controller = FindFirstObjectByType<PlayerController>();
         }
     }
@@ -127,18 +130,6 @@ public class Player : NetworkBehaviour
 
             menuUI.ConnectLobby(StopClient);
         }
-    }
-
-    public void PlaceConstruct(bool resetTasks, int index, Vector2 pos) => CmdPlaceConstruct(controller.UnitChoose.OfType<Unit>().ToList(), resetTasks, index, pos);
-
-    [Command]
-    private void CmdPlaceConstruct(List<Unit> unitChoose, bool resetTasks, int index, Vector2 pos)
-    {
-        var phantomPrefub = controller.UserInterface.BuildingsUI.GetBuilding(index);
-        BuildingPhantom newBuilding = SpawnerManager.Instance.Spawn(phantomPrefub, pos, Quaternion.identity, ID, connectionToClient) as BuildingPhantom;
-
-        unitsController.SetUnitsBuilding(unitChoose, newBuilding, ID, resetTasks);
-        newBuilding.StartConstruct();
     }
 
     public void DeleteEntity() => CmdDeleteEntity(controller.UnitChoose, controller.BuildingChoose, controller.ConstructionChoose);

@@ -30,7 +30,7 @@ public class Resource : Entity, IResource
 
             if (player.ID != playerID) continue;
 
-            playerEconomy = conn.identity.GetComponent<Player>().GetPlayerEconomy();
+            playerEconomy = conn.identity.GetComponent<Player>().Economy;
 
             break;
         }

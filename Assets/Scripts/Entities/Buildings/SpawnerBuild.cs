@@ -39,7 +39,7 @@ public class SpawnerBuild : Building
         if (NetworkServer.connections.TryGetValue(PlayerID, out var conn))
             player = conn.identity.GetComponent<Player>();
 
-        if (player == null || player.GetPlayerEconomy().SpendResources(entities[index].GetPrice()) == false) return;
+        if (player == null || player.Economy.SpendResources(entities[index].GetPrice()) == false) return;
 
         queueEntity.Enqueue((entities[index].Entity, entities[index].TimeToSpawn));
 

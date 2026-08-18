@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using Mirror;
 using UnityEngine;
@@ -128,6 +129,55 @@ public class Worker : Unit, IBuilder, IHarvester
             resource.Harvest(PlayerID);
 
         harvest = null;
+    }
+
+    protected override void TryHandleCustomTask((Action task, Entity target) completedTask, string methodName)
+    {
+        base.TryHandleCustomTask(completedTask, methodName);
+
+        Player player = null;
+
+        if (NetworkServer.connections.TryGetValue(PlayerID, out var conn) && conn.identity != null)
+            player = conn.identity.GetComponent<Player>();
+
+        switch (methodName)
+        {
+            case nameof(Build):
+                SetBuildTask(player.BuildingsManager.GetNearestConstruction(transform.position));
+                break;
+            case nameof(Harvest):
+                Entity resource = FindNearestResourceInViewingCircle(completedTask.target.GetComponent<Resource>().Type);
+                SetHarvestTask(resource);
+                break;
+            default:
+                break;
+        }
+    }
+
+    protected Entity FindNearestResourceInViewingCircle(ResourceType type)
+    {
+        float radius = ViewingRadius;
+
+        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, radius * 1.1f, 1 << 13);
+
+        Entity nearestEnemy = null;
+        float minDistance = float.MaxValue;
+
+        foreach (var hit in hits)
+        {
+            if (hit.TryGetComponent(out Resource resource) && resource.Type == type)
+            {
+                float distance = Vector2.Distance(transform.position, hit.transform.position);
+                
+                if (distance < minDistance)
+                {
+                    minDistance = distance;
+                    nearestEnemy = resource;
+                }
+            }
+        }
+
+        return nearestEnemy;
     }
 
     public override void ResetState()

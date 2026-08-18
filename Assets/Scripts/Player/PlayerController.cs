@@ -322,6 +322,6 @@ public class PlayerController : MonoBehaviour
         this.player.OnWin += Win;
         this.player.OnLose += Lose;
 
-        FindFirstObjectByType<ResourcesUI>().Initialize(player.GetPlayerEconomy());
+        FindFirstObjectByType<ResourcesUI>().Initialize(player.Economy);
     }
 }
