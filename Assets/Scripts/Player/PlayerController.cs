@@ -27,6 +27,8 @@ public class PlayerController : MonoBehaviour
     public List<Entity> BuildingChoose { get; private set; } = new List<Entity>();
     public List<Entity> ConstructionChoose { get; private set; } = new List<Entity>();
 
+    public Dictionary<string, List<SpawnerBuild>> SpawnerBuildingsByType { get; private set; } = new Dictionary<string, List<SpawnerBuild>>();
+
     private BuildingPhantom constructionPhantom;
     private int constrIndex = -1;
 
@@ -41,6 +43,11 @@ public class PlayerController : MonoBehaviour
 
         MiniMap.OnDragMap += MoveCameraOnMap;
         MiniMap.OnSetTask += SetTaskOnMap;
+
+        for (int i = 0; i < UI.PanelKeys.Length; i++)
+        {
+            SpawnerBuildingsByType.Add(UI.PanelKeys[i], new List<SpawnerBuild>());
+        }
     }
 
     void Update()
@@ -57,7 +64,7 @@ public class PlayerController : MonoBehaviour
             UpdateChooseBox();
 
         if (Input.GetMouseButtonUp(0))
-            chooseBox.SetActive(false);
+            EndChoose();
 
         if (Input.GetMouseButtonDown(1))
             SetTask(Input.mousePosition);
@@ -120,6 +127,10 @@ public class PlayerController : MonoBehaviour
         UnitChoose.Clear();
         BuildingChoose.Clear();
         ConstructionChoose.Clear();
+        SpawnerBuildingsByType.Clear();
+
+        foreach (var key in UI.PanelKeys)
+            UserInterface.QueueUI.ClosePanel(key);
     }
 
     private void StartChoose()
@@ -130,6 +141,26 @@ public class PlayerController : MonoBehaviour
         chooseBox.SetActive(true);
 
         startChoosePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+    }
+
+    private void EndChoose()
+    {
+        chooseBox.SetActive(false);
+
+        for (int i = 0; i < UI.PanelKeys.Length; i++)
+        {
+            if (SpawnerBuildingsByType[UI.PanelKeys[i]].Count > 0)
+            {
+                List<QueueTaskData> queueTaskDatas = new List<QueueTaskData>();
+                
+                for (int j = 0; j < SpawnerBuildingsByType[UI.PanelKeys[i]].Count; j++)
+                {
+                    queueTaskDatas.AddRange(SpawnerBuildingsByType[UI.PanelKeys[i]][j].GetQueueData());
+                }
+
+                UserInterface.QueueUI.OpenPanel(UI.PanelKeys[i], queueTaskDatas);
+            }
+        }
     }
 
     public void SetChoose(Collider2D collision, bool choose)
@@ -163,11 +194,21 @@ public class PlayerController : MonoBehaviour
                 {
                     BuildingChoose.Add(building);
                     building.OnDeath += ReactOnDeathEntity;
+
+                    if (building is ISpawner spawner && SpawnerBuildingsByType[UI.PanelKeys[spawner.IndexUI]].Contains(building) == false)
+                    {
+                        SpawnerBuildingsByType[UI.PanelKeys[spawner.IndexUI]].Add(building as SpawnerBuild);
+                    }
                 }
                 else if (!choose)
                 {
                     BuildingChoose.Remove(building);
                     building.OnDeath -= ReactOnDeathEntity;
+
+                    if (building is ISpawner spawner)
+                    {
+                        SpawnerBuildingsByType[UI.PanelKeys[spawner.IndexUI]].Remove(building as SpawnerBuild);
+                    }
                 }
                 break;
             case BuildingPhantom phantom:

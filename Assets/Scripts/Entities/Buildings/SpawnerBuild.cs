@@ -4,8 +4,9 @@ using UnityEngine;
 using System;
 using UnityEngine.UI;
 using Mirror;
+using System.Linq;
 
-public class SpawnerBuild : Building
+public class SpawnerBuild : Building, ISpawner
 {
     [SerializeField] private int indexUI;
 
@@ -13,11 +14,39 @@ public class SpawnerBuild : Building
 
     private Image spawnImage;
 
-    private Queue<(Entity entity, float timeToSpawn)> queueEntity = new Queue<(Entity entity, float timeToSpawn)>();
+    private Queue<(Entity entity, float timeToSpawn)> queueEntity { get; } = new Queue<(Entity entity, float timeToSpawn)>();
 
     private Coroutine timer;
 
+    float timeLeftToSpawn = 0;
+
     private Vector2 spawnPoint;
+
+    public int IndexUI => indexUI;
+
+    public List<QueueTaskData> GetQueueData()
+    {
+        List<QueueTaskData> queueTaskDatas = new List<QueueTaskData>();
+
+        if (queueEntity.Count < 1) return queueTaskDatas;
+
+        bool isFirst = true;
+
+        foreach (var task in queueEntity)
+        {
+            if (isFirst)
+            {
+                queueTaskDatas.Add(new QueueTaskData(task.entity.Data.Name, task.timeToSpawn, timeLeftToSpawn, true));
+                isFirst = false;
+            }
+            else
+            {
+                queueTaskDatas.Add(new QueueTaskData(task.entity.Data.Name, task.timeToSpawn, 0, false));
+            }
+        }
+        
+        return queueTaskDatas;
+    }
 
     protected override void Awake()
     {
@@ -68,13 +97,13 @@ public class SpawnerBuild : Building
         {
             var queue = queueEntity.Dequeue();
 
-            float timeLeft = 0;
+            timeLeftToSpawn = 0;
 
-            while(timeLeft < queue.timeToSpawn)
+            while(timeLeftToSpawn < queue.timeToSpawn)
             {
-                timeLeft += Time.deltaTime;
+                timeLeftToSpawn += Time.deltaTime;
 
-                OnSpawnProgressChanged(connectionToClient, timeLeft / queue.timeToSpawn);
+                OnSpawnProgressChanged(connectionToClient, timeLeftToSpawn / queue.timeToSpawn);
 
                 yield return null;
             }

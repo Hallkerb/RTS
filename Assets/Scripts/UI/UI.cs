@@ -13,6 +13,8 @@ public class UI : MonoBehaviour
 
     [HideInInspector] public BuildingsUI BuildingsUI { get; private set; }
 
+    [HideInInspector] public QueueUI QueueUI { get; private set; }
+
     private Dictionary<string, GameObject> panels = new Dictionary<string, GameObject>();
 
     public GameObject exitGamePanel { get; private set; }
@@ -21,7 +23,10 @@ public class UI : MonoBehaviour
 
     void Awake()
     {
-        BuildingsUI = transform.Find("Bottom_Panel").Find("Panels").GetComponentInChildren<BuildingsUI>();
+        Transform bottomPanel = transform.Find("Bottom_Panel");
+
+        BuildingsUI = bottomPanel.Find("Panels").GetComponentInChildren<BuildingsUI>();
+        QueueUI = bottomPanel.Find("Queue_Panel").GetComponent<QueueUI>();
 
         exitGamePanel = Camera.main.transform.Find("UI").Find("Exit_Panel").gameObject;
         lossPanel = transform.Find("Loss_Panel").gameObject;

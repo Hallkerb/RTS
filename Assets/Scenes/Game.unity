@@ -4742,6 +4742,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1059568785}
+  - component: {fileID: 1059568786}
   m_Layer: 5
   m_Name: Queue_Panel
   m_TagString: Untagged
@@ -4769,6 +4770,18 @@ RectTransform:
   m_AnchoredPosition: {x: 515, y: 110.000046}
   m_SizeDelta: {x: 250, y: 320}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1059568786
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1059568784}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9ddca2762c1426d4a9b53e20923fa3a7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::QueueUI
 --- !u!1 &1076528295
 GameObject:
   m_ObjectHideFlags: 0
@@ -7246,6 +7259,22 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1998716695}
     m_Modifications:
+    - target: {fileID: 177881457920659861, guid: cb97ba89acecac84a9c0281633c8515c, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 177881457920659861, guid: cb97ba89acecac84a9c0281633c8515c, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 177881457920659861, guid: cb97ba89acecac84a9c0281633c8515c, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 177881457920659861, guid: cb97ba89acecac84a9c0281633c8515c, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1102778324759935743, guid: cb97ba89acecac84a9c0281633c8515c, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -7312,7 +7341,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1102778324759935743, guid: cb97ba89acecac84a9c0281633c8515c, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -70
+      value: -270
       objectReference: {fileID: 0}
     - target: {fileID: 1102778324759935743, guid: cb97ba89acecac84a9c0281633c8515c, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -7324,6 +7353,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1102778324759935743, guid: cb97ba89acecac84a9c0281633c8515c, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1632214343061257690, guid: cb97ba89acecac84a9c0281633c8515c, type: 3}
+      propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1920082561795468941, guid: cb97ba89acecac84a9c0281633c8515c, type: 3}
