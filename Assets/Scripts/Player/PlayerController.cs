@@ -127,7 +127,14 @@ public class PlayerController : MonoBehaviour
         UnitChoose.Clear();
         BuildingChoose.Clear();
         ConstructionChoose.Clear();
-        SpawnerBuildingsByType.Clear();
+
+        foreach (var list in SpawnerBuildingsByType.Values)
+        {
+            foreach (var spawner in list)
+                spawner.OnAddQueue -= UpdateQueueSpawner;
+
+            list.Clear();
+        }
 
         foreach (var key in UI.PanelKeys)
             UserInterface.QueueUI.ClosePanel(key);
@@ -145,6 +152,8 @@ public class PlayerController : MonoBehaviour
 
     private void EndChoose()
     {
+        if (chooseBox.IsActive == false) return;
+
         chooseBox.SetActive(false);
 
         for (int i = 0; i < UI.PanelKeys.Length; i++)
@@ -156,11 +165,18 @@ public class PlayerController : MonoBehaviour
                 for (int j = 0; j < SpawnerBuildingsByType[UI.PanelKeys[i]].Count; j++)
                 {
                     queueTaskDatas.AddRange(SpawnerBuildingsByType[UI.PanelKeys[i]][j].GetQueueData());
+
+                    SpawnerBuildingsByType[UI.PanelKeys[i]][j].OnAddQueue += UpdateQueueSpawner;
                 }
 
                 UserInterface.QueueUI.OpenPanel(UI.PanelKeys[i], queueTaskDatas);
             }
         }
+    }
+
+    private void UpdateQueueSpawner(string key, QueueTaskData queueData)
+    {
+        UserInterface.QueueUI.UpdatePanel(key, queueData);
     }
 
     public void SetChoose(Collider2D collision, bool choose)

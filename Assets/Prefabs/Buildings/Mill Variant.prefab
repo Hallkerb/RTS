@@ -165,6 +165,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 3846989470003600653, guid: 45c2b01e9d5fbfc4d9305768a32b784e, type: 3}
     - target: {fileID: 7771966295077592587, guid: ae7e7c43306eb0c488a0ce8432bf8473, type: 3}
+      propertyPath: entities.Array.data[0]._spawnOffset
+      value: 0.25
+      objectReference: {fileID: 0}
+    - target: {fileID: 7771966295077592587, guid: ae7e7c43306eb0c488a0ce8432bf8473, type: 3}
       propertyPath: entities.Array.data[0]._timeToSpawn
       value: 0.2
       objectReference: {fileID: 0}

@@ -6,6 +6,8 @@ public class ChooseBox : MonoBehaviour
 
     private bool isActive;
 
+    public bool IsActive => isActive;
+
     void Awake()
     {
         playerController = FindFirstObjectByType<PlayerController>();

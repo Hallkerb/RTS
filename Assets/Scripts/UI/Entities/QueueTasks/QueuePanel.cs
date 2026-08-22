@@ -32,6 +32,16 @@ public class QueuePanel : MonoBehaviour
             tasks[i].OnCompleted -= CompletedTask;
         }
     }
+    
+    public void AddQueue(QueueTaskData taskData)
+    {
+        if (queue == null)
+            queue = new List<QueueTaskData>() { taskData };
+        else
+            queue.Add(taskData);
+
+        UpdatePanel();
+    }
 
     public void UpdatePanel(List<QueueTaskData> queue)
     {
@@ -39,6 +49,11 @@ public class QueuePanel : MonoBehaviour
 
         if (queue == null) return;
 
+        UpdatePanel();
+    }
+
+    private void UpdatePanel()
+    {
         int length = tasks.Length;
 
         int executionIndex = 0;
@@ -53,7 +68,7 @@ public class QueuePanel : MonoBehaviour
                 continue;
             }
 
-            tasks[i].SetExecution(queue[i], i);
+            tasks[i].SetTask(queue[i]);
 
             if (queue[i].IsExecution)
             {
@@ -79,7 +94,12 @@ public class QueuePanel : MonoBehaviour
 
     private void CompletedTask(QueueObject task)
     {
-        queue.RemoveAt(task.Index);
+        int index = queue.IndexOf(task.TaskData);
+
+        queue.RemoveAt(index);
+
+        if (queue.Count > index)
+            queue[index].SetExecution();
 
         UpdatePanel(queue);
     }

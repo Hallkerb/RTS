@@ -14,13 +14,15 @@ public class SpawnerBuild : Building, ISpawner
 
     private Image spawnImage;
 
-    private Queue<(Entity entity, float timeToSpawn)> queueEntity { get; } = new Queue<(Entity entity, float timeToSpawn)>();
+    private Queue<EntitySpawnData> queueEntity { get; } = new Queue<EntitySpawnData>();
 
     private Coroutine timer;
 
     float timeLeftToSpawn = 0;
 
     private Vector2 spawnPoint;
+
+    public Action<string, QueueTaskData> OnAddQueue;
 
     public int IndexUI => indexUI;
 
@@ -36,12 +38,12 @@ public class SpawnerBuild : Building, ISpawner
         {
             if (isFirst)
             {
-                queueTaskDatas.Add(new QueueTaskData(task.entity.Data.Name, task.timeToSpawn, timeLeftToSpawn, true));
+                queueTaskDatas.Add(new QueueTaskData(task.Entity.Data.Name, task.TimeToSpawn, timeLeftToSpawn, true));
                 isFirst = false;
             }
             else
             {
-                queueTaskDatas.Add(new QueueTaskData(task.entity.Data.Name, task.timeToSpawn, 0, false));
+                queueTaskDatas.Add(new QueueTaskData(task.Entity.Data.Name, task.TimeToSpawn, 0, false));
             }
         }
         
@@ -68,9 +70,13 @@ public class SpawnerBuild : Building, ISpawner
         if (NetworkServer.connections.TryGetValue(PlayerID, out var conn))
             player = conn.identity.GetComponent<Player>();
 
-        if (player == null || player.Economy.SpendResources(entities[index].GetPrice()) == false) return;
+        EntitySpawnData spawnData = entities[index];
 
-        queueEntity.Enqueue((entities[index].Entity, entities[index].TimeToSpawn));
+        if (player == null || player.Economy.SpendResources(spawnData.GetPrice()) == false) return;
+
+        queueEntity.Enqueue(spawnData);
+
+        OnAddQueue?.Invoke(UI.PanelKeys[IndexUI], new QueueTaskData(spawnData.Entity.Data.Name, spawnData.TimeToSpawn, 0, timer == null));
 
         if (timer == null)
             timer = StartCoroutine(timerToSpawn());
@@ -86,29 +92,34 @@ public class SpawnerBuild : Building, ISpawner
     [Command]
     public void CmdRepositionSpawn(Vector2 endPos) => RepositionSpawn(endPos);
 
-    public void SpawnEntity(Entity entity)
+    public void SpawnEntity(EntitySpawnData spawnData)
     {
-        SpawnerManager.Instance.Spawn(entity, spawnPoint, Quaternion.identity, PlayerID, connectionToClient);
+        Vector2 direction = (spawnPoint - (Vector2)transform.position).normalized;
+        Vector2 spawnPos = spawnPoint + direction * spawnData.SpawnOffset;
+
+        SpawnerManager.Instance.Spawn(spawnData.Entity, spawnPos , Quaternion.identity, PlayerID, connectionToClient);
     }
 
     private IEnumerator timerToSpawn()
     {
         while(queueEntity.Count > 0)
         {
-            var queue = queueEntity.Dequeue();
+            var queue = queueEntity.Peek();
 
             timeLeftToSpawn = 0;
 
-            while(timeLeftToSpawn < queue.timeToSpawn)
+            while(timeLeftToSpawn < queue.TimeToSpawn)
             {
                 timeLeftToSpawn += Time.deltaTime;
 
-                OnSpawnProgressChanged(connectionToClient, timeLeftToSpawn / queue.timeToSpawn);
+                OnSpawnProgressChanged(connectionToClient, timeLeftToSpawn / queue.TimeToSpawn);
 
                 yield return null;
             }
 
-            SpawnEntity(queue.entity);
+            queueEntity.Dequeue();
+
+            SpawnEntity(queue);
 
             OnSpawnProgressChanged(connectionToClient, 0);
         }

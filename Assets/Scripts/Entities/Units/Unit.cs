@@ -344,7 +344,8 @@ public abstract class Unit : Entity, IMovable, IAttackable
     {
         if (collision.gameObject.TryGetComponent(out Unit unit))
             closeUnits.Add(unit);
-        else if ((moveLayerMask & (1 << collision.gameObject.layer)) == 0)
+            
+        if (IsObstacle(collision))
             closeWalls.Add(collision);
     }
 
@@ -352,8 +353,22 @@ public abstract class Unit : Entity, IMovable, IAttackable
     {
         if (collision.gameObject.TryGetComponent(out Unit unit))
             closeUnits.Remove(unit);
-        else if ((moveLayerMask & (1 << collision.gameObject.layer)) == 0)
+
+        if (IsObstacle(collision))
             closeWalls.Remove(collision);
+    }
+
+    private bool IsObstacle(Collider2D collision)
+    {
+        bool isWalkableLayer = (moveLayerMask & (1 << collision.gameObject.layer)) != 0;
+
+        if (isWalkableLayer) return false;
+
+        bool isFood = collision.TryGetComponent(out Resource resource) && resource.Type == ResourceType.Food;
+
+        if (isFood) return false;
+
+        return true;
     }
 
     private int GetLayerMask()

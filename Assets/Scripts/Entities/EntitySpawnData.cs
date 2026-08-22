@@ -23,6 +23,17 @@ public class EntitySpawnData
         }
     }
 
+    [Space(20)]
+    [Min(0)] [SerializeField] private float _spawnOffset;
+    public float SpawnOffset
+    { 
+        get => _spawnOffset; 
+        set
+        {
+            _spawnOffset = value;
+        }
+    }
+
     [Header("Price")]
     [Min(0)] [SerializeField] private int _foodPrice;
     [Min(0)] [SerializeField] private int _materialsPrice;

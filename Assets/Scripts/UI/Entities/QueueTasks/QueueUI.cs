@@ -27,16 +27,21 @@ public class QueueUI : MonoBehaviour
 
     public void OpenPanel(string key, List<QueueTaskData> queue)
     {
-        foreach (var panel in panels)
-        {
-            if (panel.Key == key)
-            {
-                panel.Value.gameObject.SetActive(true);
-                panel.Value.UpdatePanel(queue);
+        var panel = panels[key];
 
-                return;
-            }
-        }
+        if (panel == null) return;
+
+        panel.gameObject.SetActive(true);
+        panel.UpdatePanel(queue);
+    }
+
+    public void UpdatePanel(string key, QueueTaskData taskData)
+    {
+        var panel = panels[key];
+
+        if (panel == null) return;
+
+        panel.AddQueue(taskData);
     }
 
     public void ClosePanel(string key)
