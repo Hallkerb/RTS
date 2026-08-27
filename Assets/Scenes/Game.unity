@@ -1962,18 +1962,21 @@ MonoBehaviour:
   buildings:
   - _entity: {fileID: 2527232144644950633, guid: d631d3bc802a9a7489c58dfaa3ae53e6, type: 3}
     _timeToSpawn: 0
-    _foodPrice: 0
-    _materialsPrice: 0
+    _spawnOffset: 0
+    _foodPrice: 200
+    _materialsPrice: 500
     _ironPrice: 0
   - _entity: {fileID: 3635888506272063869, guid: 092b5150ed638b84b9d64f0c0896be92, type: 3}
     _timeToSpawn: 0
-    _foodPrice: 0
-    _materialsPrice: 0
+    _spawnOffset: 0
+    _foodPrice: 200
+    _materialsPrice: 200
     _ironPrice: 0
   - _entity: {fileID: 5599774251478422576, guid: f5dff7ba71b810c4da5107b9f9011610, type: 3}
     _timeToSpawn: 0
+    _spawnOffset: 0
     _foodPrice: 0
-    _materialsPrice: 0
+    _materialsPrice: 150
     _ironPrice: 0
 --- !u!114 &510574361
 MonoBehaviour:

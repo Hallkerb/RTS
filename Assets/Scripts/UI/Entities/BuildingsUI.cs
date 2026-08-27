@@ -23,8 +23,14 @@ public class BuildingsUI : MonoBehaviour
 
     public BuildingPhantom GetBuilding(int index) => buildings[index].Entity as BuildingPhantom;
 
+    public EntitySpawnData GetSpawnData(int index) =>  buildings[index];
+
     public void SpawnBuilding(int index)
     {
+        EntitySpawnData spawnData = buildings[index];
+
+        if (spawnData == null || playerController.Player.Economy.EnoughResource(spawnData.GetPrice()) == false) return;
+
         BuildingPhantom phantom = ObjectPooler.Instance.Get(buildings[index].Entity.gameObject, (Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition), Quaternion.identity).GetComponent<BuildingPhantom>();
 
         playerController.SetСonstructionBuilding(phantom, index);

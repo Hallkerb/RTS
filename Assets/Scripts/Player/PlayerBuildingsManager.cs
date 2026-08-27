@@ -63,7 +63,11 @@ public class PlayerBuildingsManager : NetworkBehaviour
     [Command]
     private void CmdPlaceConstruct(List<Unit> unitChoose, bool resetTasks, int index, Vector2 pos)
     {
-        var phantomPrefub = player.Controller.UserInterface.BuildingsUI.GetBuilding(index);
+        var spawnData = player.Controller.UserInterface.BuildingsUI.GetSpawnData(index);
+        var phantomPrefub = spawnData.Entity as BuildingPhantom;
+
+        if (phantomPrefub == null || player.Economy.SpendResources(spawnData.GetPrice()) == false) return;
+
         BuildingPhantom newBuilding = SpawnerManager.Instance.Spawn(phantomPrefub, pos, Quaternion.identity, player.ID, connectionToClient) as BuildingPhantom;
 
         RegisterConstruction(newBuilding);
