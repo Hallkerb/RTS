@@ -118,6 +118,8 @@ public abstract class Entity : NetworkBehaviour, IPoolable
     {
         base.OnStartClient();
 
+        if (this is Resource) return;
+
         StartCoroutine(InitializeTeamProperties());
     }
 
@@ -131,7 +133,7 @@ public abstract class Entity : NetworkBehaviour, IPoolable
         if (TryGetComponent(out EntityTeamView view))
             view.SetColor(PlayerID, localPlayerID);
         else
-            Debug.LogError("EntityTeamView is missing. Team color for entity didn`t change!");
+            Debug.LogWarning("EntityTeamView is missing. Team color for entity didn`t change!");
     }
 
     private IEnumerator InitializeTeamProperties()
@@ -151,7 +153,7 @@ public abstract class Entity : NetworkBehaviour, IPoolable
         if (TryGetComponent(out EntityTeamView view))
             view.SetColor(PlayerID, localID);
         else
-            Debug.LogError("EntityTeamView is missing. Team color for entity didn`t change!");
+            Debug.LogWarning("EntityTeamView is missing. Team color for entity didn`t change!");
     }
 
     private IEnumerator AnimateViewingCircle()

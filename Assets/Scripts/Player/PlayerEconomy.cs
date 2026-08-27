@@ -26,7 +26,7 @@ public class PlayerEconomy : NetworkBehaviour
 
     private void OnIronChanged(int oldValue, int newValue) => OnResourceChanged?.Invoke(new[] { (ResourceType.Iron, newValue) });
 
-    private int GetResource(ResourceType resource)
+    public int GetResource(ResourceType resource)
     {
         return resource switch
         {
@@ -35,6 +35,24 @@ public class PlayerEconomy : NetworkBehaviour
             ResourceType.Iron => Iron,
             _ => 0
         };
+    }
+
+    public bool EnoughResource(params (ResourceType type, int count)[] resources)
+    {
+        var totals = new Dictionary<ResourceType, int>();
+
+        foreach (var r in resources)
+        {
+            if (!totals.ContainsKey(r.type)) 
+                totals[r.type] = 0;
+
+            totals[r.type] += r.count;
+        }
+
+        foreach (var pair in totals)
+            if (GetResource(pair.Key) < pair.Value) return false;
+
+        return true;
     }
 
     [Server]

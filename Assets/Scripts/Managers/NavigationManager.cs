@@ -163,6 +163,7 @@ public class NavigationManager : MonoBehaviour
 
     public void Dispose()
     {
-        flowField.Dispose();
+        if (flowField != null)
+            flowField.Dispose();
     }
 }

@@ -62,8 +62,31 @@ public class SpawnerBuild : Building, ISpawner
         return entities[index];
     }
 
-    [Command]
     public void SetEntityToSpawn(int index)
+    {
+        if (isServer || ClientSetEntityToSpawn(index))
+            CmdSetEntityToSpawn(index);
+    }
+
+    private bool ClientSetEntityToSpawn(int index)
+    {
+        Player player = NetworkClient.localPlayer != null 
+        ? NetworkClient.localPlayer.GetComponent<Player>() 
+        : null;
+
+        EntitySpawnData spawnData = entities[index];
+
+        if (player == null || player.Economy.EnoughResource(spawnData.GetPrice()) == false) return false;
+
+        queueEntity.Enqueue(spawnData);
+
+        OnAddQueue?.Invoke(UI.PanelKeys[IndexUI], new QueueTaskData(spawnData.Entity.Data.Name, spawnData.TimeToSpawn, 0, timer == null));
+
+        return true;
+    }
+
+    [Command]
+    public void CmdSetEntityToSpawn(int index)
     {
         Player player = null;
 
@@ -79,7 +102,7 @@ public class SpawnerBuild : Building, ISpawner
         OnAddQueue?.Invoke(UI.PanelKeys[IndexUI], new QueueTaskData(spawnData.Entity.Data.Name, spawnData.TimeToSpawn, 0, timer == null));
 
         if (timer == null)
-            timer = StartCoroutine(timerToSpawn());
+            timer = StartCoroutine(TimerToSpawn());
     }
 
     private void RepositionSpawn(Vector2 endPos)
@@ -100,8 +123,11 @@ public class SpawnerBuild : Building, ISpawner
         SpawnerManager.Instance.Spawn(spawnData.Entity, spawnPos , Quaternion.identity, PlayerID, connectionToClient);
     }
 
-    private IEnumerator timerToSpawn()
+    private IEnumerator TimerToSpawn()
     {
+        if (isServer)
+            ClientStartTimer(connectionToClient);
+
         while(queueEntity.Count > 0)
         {
             var queue = queueEntity.Peek();
@@ -112,23 +138,30 @@ public class SpawnerBuild : Building, ISpawner
             {
                 timeLeftToSpawn += Time.deltaTime;
 
-                OnSpawnProgressChanged(connectionToClient, timeLeftToSpawn / queue.TimeToSpawn);
+                OnSpawnProgressChanged(timeLeftToSpawn / queue.TimeToSpawn);
 
                 yield return null;
             }
 
             queueEntity.Dequeue();
 
-            SpawnEntity(queue);
+            OnSpawnProgressChanged(0);
 
-            OnSpawnProgressChanged(connectionToClient, 0);
+            if (isServer)
+                SpawnEntity(queue);
         }
 
         timer = null;
     }
 
     [TargetRpc]
-    private void OnSpawnProgressChanged(NetworkConnectionToClient target, float newValue) => spawnImage.fillAmount = newValue;
+    private void ClientStartTimer(NetworkConnection connection)
+    {
+        if (isServer == false && timer == null)
+            timer = StartCoroutine(TimerToSpawn());
+    }
+
+    private void OnSpawnProgressChanged(float newValue) => spawnImage.fillAmount = newValue;
 
     public override void Initialize(int playerID)
     {
