@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using UnityEngine;
 
@@ -24,15 +23,15 @@ public struct BuildingData
     }
 }
 
-public struct FieldData
+public struct AStarNodeData
 {
-    public int Cost;
-    public Vector2 Vector;
+    public int parent;
+    public float g; // Distance from start
 
-    public FieldData(int cost, Vector2 vector)
+    public AStarNodeData(int parent, float g)
     {
-        Cost = cost;
-        Vector = vector;
+        this.parent = parent;
+        this.g = g;
     }
 }
 
@@ -55,12 +54,7 @@ public class Node
     public bool[] IsSizeClear { get; private set; }
     private int[] blockSizeCount;
 
-    public Node parent;
-    public float g; // Distance from start
-    public float h; // Distance to target
-    public float f => g + h; // General cost (g + h)
-
-    //public List<FieldData> FieldDatas { get; private set; } = new List<FieldData>();
+    private bool borderBlocked;
 
     public bool IsInside(Vector2 point)
     {
@@ -119,34 +113,18 @@ public class Node
         }
     }*/
 
-    public void BlockNode(bool isBlock, bool isSizeBlock)
+    public void BlockNode(bool coversPoint, bool coversSize, bool add)
     {
-        if (isBlock)
-            Interlocked.Increment(ref blockCount);
-        else if (blockCount > 0)
-            Interlocked.Decrement(ref blockCount);
+        int delta = add ? 1 : -1;
 
-        if (isSizeBlock)
-            Interlocked.Increment(ref blockSizeCount[0]);
-        else if (blockSizeCount[0] > 0)
-            Interlocked.Decrement(ref blockSizeCount[0]);
+        if (coversPoint)
+            Interlocked.Add(ref blockCount, delta);
 
-        IsClear = blockCount == 0;
-        IsSizeClear[0] = blockSizeCount[0] == 0;
-    }
+        if (coversSize)
+            Interlocked.Add(ref blockSizeCount[0], delta);
 
-    public (bool pointClear, bool sizeClear) TryBlockNode(BuildingData buildingData)
-    {
-        Vector2 localPos = Quaternion.Inverse(buildingData.rotation) * (Position - buildingData.position);
-        Vector2 halfSize = buildingData.size * 0.5f;
-
-        IsClear = Mathf.Abs(localPos.x) > halfSize.x ||
-            Mathf.Abs(localPos.y) > halfSize.y;
-
-        IsSizeClear[0] = Mathf.Abs(localPos.x) > halfSize.x + 0.5f ||
-            Mathf.Abs(localPos.y) > halfSize.y + 0.5f;
-
-        return (IsClear, IsSizeClear[0]);
+        IsClear = Volatile.Read(ref blockCount) <= 0;
+        IsSizeClear[0] = !borderBlocked && Volatile.Read(ref blockSizeCount[0]) <= 0;
     }
 
     private void EvaluateStartColliders(Vector2 mapSize, float unitRadius)
@@ -154,36 +132,8 @@ public class Node
         float differenceX = mapSize.x / 2 - (Mathf.Abs(Position.x) + Size / 2);
         float differenceY = mapSize.y / 2 - (Mathf.Abs(Position.y) + Size / 2);
 
-        IsSizeClear[0] = Mathf.Min(differenceX, differenceY) > unitRadius;
-    }
-
-    public void EvaluateColliders()
-    {
-        IsClear = EvaluateBoxClear(Size);
-        IsSizeClear[0] = EvaluateCircleClear(0.5f);
-    }
-
-    private bool EvaluateCircleClear(float radius)
-    {
-        Collider2D hit = Physics2D.OverlapCircle(Position, radius, ~GetCombinedLayerMask());
-
-        return hit == null;
-    }
-
-    private bool EvaluateBoxClear(float size)
-    {
-        Collider2D hit = Physics2D.OverlapBox(Position, new Vector2(size / 2, size / 2), 0, ~GetCombinedLayerMask());
-
-        return hit == null;
-    }
-
-    private int GetCombinedLayerMask()
-    {
-        int layerToIgnore = 1 << 3; // 3 - Floor
-        int layerToIgnore2 = 1 << 6; // 6 - Units
-        int layerToIgnore3 = 1 << 5; // 5 - UI
-
-        return layerToIgnore | layerToIgnore2 | layerToIgnore3;
+        borderBlocked = Mathf.Min(differenceX, differenceY) <= unitRadius;
+        IsSizeClear[0] = !borderBlocked;
     }
 
     public Node(Vector2 _position, float gridSize, int sizeCount, int id, Vector2 mapSize, float unitRadius)
@@ -193,10 +143,6 @@ public class Node
         Size = gridSize;
         IsSizeClear = new bool[sizeCount];
         blockSizeCount = new int[sizeCount];
-
-        parent = null;
-        g = Mathf.Infinity;
-        h = Mathf.Infinity;
 
         EvaluateStartColliders(mapSize, unitRadius);
     }

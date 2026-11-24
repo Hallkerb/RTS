@@ -22,6 +22,8 @@ public class BuildingPhantom : Entity
 
     private static float constructMultiplier = 20;
 
+    public Building Building => building;
+
     protected override void Awake()
     {
         base.Awake();
@@ -125,6 +127,27 @@ public class BuildingPhantom : Entity
         }
     }
 
+    public void InstantPlace(Player player, int index)
+    {
+        // ONLY FOR TESTING PURPOSES, REMOVE LATER
+
+        if(PosClear)
+        {
+            player.BuildingsManager.InstantPlaceConstruct(index, transform.position);
+
+            if (TryGetComponent<NetworkIdentity>(out var netIdentity))
+            {
+                if (netIdentity.netId == 0)
+                {
+                    LocalDestruction();
+                    return;
+                }
+            }
+
+            UnSpawn();
+        }
+    }
+
     [ClientRpc]
     private void RpcStartConstruct()
     {
@@ -158,6 +181,15 @@ public class BuildingPhantom : Entity
 
     private void ConstructBuilding()
     {
+        SpawnerManager.Instance.Spawn(building, transform.position, Quaternion.identity, PlayerID, connectionToClient);
+
+        Destruction();
+    }
+
+    public void InstantConstruct()
+    {
+        // ONLY FOR TESTING PURPOSES, REMOVE LATER
+
         SpawnerManager.Instance.Spawn(building, transform.position, Quaternion.identity, PlayerID, connectionToClient);
 
         Destruction();

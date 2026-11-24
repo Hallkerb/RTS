@@ -10,7 +10,7 @@ public class Section
 
     public float Size { get; }
 
-    public Node[] Grid { get; private set; }
+    public Node[] Nodes { get; private set; }
 
     //public GameObject[] Walls;
     //public GameObject[] Cells;
@@ -56,7 +56,7 @@ public class Section
 
         Debug.Log($"grid count = {gridCount}, Size = {Size}, gridSize = {gridSize}");
 
-        Grid = new Node[gridCount];
+        Nodes = new Node[gridCount];
         //Cells = new GameObject[gridCount];
 
         int sizeTable = (int)Mathf.Round(Size / gridSize);
@@ -72,7 +72,7 @@ public class Section
                                                 Position.y - halfSize + (line * gridSize) + gridSize / 2);
 
 
-            Grid[i] = new Node(nodePosition, gridSize, 1, i + ID * gridCount, mapSize, unitRadius);
+            Nodes[i] = new Node(nodePosition, gridSize, 1, i + ID * gridCount, mapSize, unitRadius);
         }
         
         Debug.Log("Spawn grid end");

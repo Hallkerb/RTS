@@ -10,7 +10,7 @@ using Unity.Mathematics;
 
 public class UnitsInField
 {
-    public HashSet<Unit> Units { get; private set; } = new HashSet<Unit>();
+    public HashSet<Unit> Units { get; private set; } = new HashSet<Unit>(); 
 }
 
 public struct NativeFieldData
@@ -57,26 +57,34 @@ public struct NativeFieldClearData
 
 public class FlowField_Navigation
 {
-    private Floor floor;
+    private Grid grid;
     
     public List<NativeFieldData> FieldDatas { get; private set; }
     public NativeFieldClearData FieldClearData { get; private set; }
     private List<UnitsInField> Fields { get; set; } = new List<UnitsInField>();
     private Stack<int> emptyFields = new Stack<int>();
     private NativeArray<int2> offsets;
+    private readonly object fieldsLock = new object();
 
     public bool Initialized { get; private set; } = false;
 
     private int costToNode = 2;
 
-    public void AddUnitInField(Unit unit, int index) => Fields[index].Units.Add(unit);
+    public void AddUnitInField(Unit unit, int index)
+    {
+        lock (fieldsLock)
+        {
+            Fields[index].Units.Add(unit);
+        }
+    }
 
     public void RemoveUnitInField(Unit unit, int index)
     {
-        Fields[index].Units.Remove(unit);
-
-        if(Fields[index].Units.Count <= 0)
-            emptyFields.Push(index);
+        lock (fieldsLock)
+        {
+            if (Fields[index].Units.Remove(unit) && Fields[index].Units.Count == 0)
+                emptyFields.Push(index);
+        }
     }
 
     public int FieldsCount() => Fields.Count;
@@ -89,14 +97,15 @@ public class FlowField_Navigation
             // var sw0 = System.Diagnostics.Stopwatch.StartNew();
             // var sw1 = System.Diagnostics.Stopwatch.StartNew();
 
-            NativeBitArray visitedTags = new NativeBitArray(floor.Grid.Length, Allocator.Persistent);
+            NativeBitArray visitedTags = new NativeBitArray(grid.Nodes.Length, Allocator.Persistent);
 
             int width = (int)Mathf.Sqrt(visitedTags.Length);
 
             Node targetNode = null;
             int fieldIndex;
+            NativeFieldData fieldData;
 
-            targetNode = NavigationHelper.SetTargetNode(floor, unit, targetPoint);
+            targetNode = NavigationHelper.SetTargetNode(grid, targetPoint);
 
             // sw1.Stop();
             // Debug.Log($"Target node complete: task time({sw1.ElapsedMilliseconds}ms), all time({sw0.ElapsedMilliseconds}ms), start create field");
@@ -104,16 +113,23 @@ public class FlowField_Navigation
 
             // Debug.Log(floor.Grid.Length);
 
-            if (emptyFields.TryPop(out int index))
+            lock (fieldsLock)
             {
-                CreateField(index);
-                fieldIndex = index;
+                if (!emptyFields.TryPop(out fieldIndex))
+                {
+                    fieldIndex = Fields.Count;
+                    Fields.Add(new UnitsInField());
+
+                    int len = grid.Nodes.Length;
+                    FieldDatas.Add(new NativeFieldData(
+                        new NativeArray<int>(len, Allocator.Persistent),
+                        new NativeArray<float2>(len, Allocator.Persistent)));
+                }
+
+                fieldData = FieldDatas[fieldIndex];
             }
-            else
-            {
-                CreateField();
-                fieldIndex = Fields.Count - 1;
-            }
+
+            CreateNodesField(fieldData.Cost, fieldData.Vector);
 
             // Debug.Log($"fieldIndex = {fieldIndex}");
 
@@ -121,7 +137,7 @@ public class FlowField_Navigation
             // Debug.Log($"Create field complete: task time({sw1.ElapsedMilliseconds}ms), all time({sw0.ElapsedMilliseconds}ms), start fill field");
             // sw1.Restart();
 
-            FillField(visitedTags, width, Array.IndexOf(floor.Grid, targetNode), fieldIndex); // FillField(visitedTags, ref targetNode, fieldIndex);
+            FillField(visitedTags, width, targetNode.ID, fieldData); // FillField(visitedTags, ref targetNode, fieldIndex);
 
             // sw1.Stop();
             // Debug.Log($"Field complete: task time({sw1.ElapsedMilliseconds}ms), all time({sw0.ElapsedMilliseconds}ms), start create vectors");
@@ -129,7 +145,7 @@ public class FlowField_Navigation
 
             try
             {
-                CreateVectors(visitedTags, width, fieldIndex);
+                CreateVectors(visitedTags, width, fieldData);
 
                 // sw1.Stop();
                 // Debug.Log($"Vectors complete: task time({sw1.ElapsedMilliseconds}ms), all time({sw0.ElapsedMilliseconds}ms), start smooth");
@@ -147,8 +163,10 @@ public class FlowField_Navigation
             {
                 Debug.LogError(ex);
             }
-
-            visitedTags.Dispose();
+            finally
+            {
+                visitedTags.Dispose();
+            }
 
             // Debug.Log($"Return field index: oll time {sw0.ElapsedMilliseconds}ms");
 
@@ -169,49 +187,6 @@ public class FlowField_Navigation
         }
     }
 
-    private void CreateField(int index = -1)
-    {
-        if (index < 0)
-        {
-            Fields.Add(new UnitsInField());
-            CreateNodesField();
-        }
-        else
-            CreateNodesField(index);
-    }
-
-    private void CreateNodesField()
-    {
-        int gridLength = floor.Grid.Length;
-
-        var costs = new NativeArray<int>(gridLength, Allocator.Persistent);
-        var vectors = new NativeArray<float2>(gridLength, Allocator.Persistent);
-
-        FieldDatas.Add(new NativeFieldData(costs, vectors));
-
-        CreateNodesField(costs, vectors);
-
-        /*Parallel.For(0, floor.Grid.Length, i =>
-        {
-            Node node = floor.Grid[i];
-            node.FieldDatas.Add(new FieldData(int.MaxValue, Vector2.zero));
-        });*/
-    }
-
-    private void CreateNodesField(int index)
-    {
-        var costs = FieldDatas[index].Cost;
-        var vectors = FieldDatas[index].Vector;
-
-        CreateNodesField(costs, vectors);
-        
-        /*Parallel.For(0, floor.Grid.Length, i =>
-        {
-            Node node = floor.Grid[i];
-            node.FieldDatas[index] = new FieldData(int.MaxValue, Vector2.zero);
-        });*/
-    }
-
     private void CreateNodesField(NativeArray<int> costs, NativeArray<float2> vectors)
     {
         var job = new CreateFieldJob
@@ -220,7 +195,7 @@ public class FlowField_Navigation
             Vectors = vectors
         };
 
-        JobHandle handle = job.Schedule(floor.Grid.Length, 64);
+        JobHandle handle = job.Schedule(grid.Nodes.Length, 64);
         handle.Complete();
     }
 
@@ -288,13 +263,6 @@ public class FlowField_Navigation
             }
         }
 
-        private void UpdateNodeAndEnqueue(NativeArray<int> nodeIndex, NativeQueue<int> openSet, int tentativeFF)
-        {
-            FieldData.Cost[nodeIndex[0]] = tentativeFF;
-
-            openSet.Enqueue(nodeIndex[0]);
-        }
-
         private void UpdateNodeAndEnqueue(int nodeIndex, NativeQueue<int> openSet, int tentativeFF)
         {
             FieldData.Cost[nodeIndex] = tentativeFF;
@@ -319,11 +287,9 @@ public class FlowField_Navigation
         }
     }
 
-    private void FillField(NativeBitArray visitedTags, int width, int targetIndex, int fieldIndex)
+    private void FillField(NativeBitArray visitedTags, int width, int targetIndex, NativeFieldData fieldData)
     {
-        var fieldData = FieldDatas[fieldIndex];
         fieldData.Cost[targetIndex] = 0;
-        FieldDatas[fieldIndex] = fieldData;
 
         NativeQueue<int> queue = new NativeQueue<int>(Allocator.Persistent);
         queue.Enqueue(targetIndex);
@@ -359,60 +325,6 @@ public class FlowField_Navigation
         offsets[6] = new int2(1, -1);
         offsets[7] = new int2(-1, -1);
     }
-
-    /*private void FillField(NativeBitArray visitedTags, ref Node targetNode, int fieldIndex)
-    {
-        FastPriorityQueue openSet = new FastPriorityQueue();
-        
-        UpdateNodeAndEnqueue(targetNode, openSet, 0, fieldIndex);
-
-        while (openSet.Count > 0)
-        {
-            Node currentNode = GetCurrentNode(openSet, visitedTags);
-
-            if (currentNode == null) break;
-
-            for (int i = 0; i < currentNode.NeighborsNode.Length; i++)
-            {
-                Node neighbor = currentNode.NeighborsNode[i];
-
-                if (visitedTags.IsSet(neighbor.ID) || neighbor == null || neighbor.IsClear == false) continue;
-
-                if (neighbor.IsSizeClear[0] == false)
-                {
-                    visitedTags.Set(neighbor.ID, true);
-                    continue;
-                }
-
-                int tentativeFF = currentNode.FieldDatas[fieldIndex].Cost + costToNode + (int)(i / 4);
-
-                if (tentativeFF < neighbor.FieldDatas[fieldIndex].Cost)
-                    UpdateNodeAndEnqueue(neighbor, openSet, tentativeFF, fieldIndex);
-            }
-        }
-    }
-
-    private Node GetCurrentNode(FastPriorityQueue openSet, NativeBitArray visitedTags)
-    {
-        while (openSet.Count > 0)
-        {
-            var cn = openSet.Dequeue();
-
-            if (visitedTags.IsSet(cn.node.ID))
-                continue;
-
-            visitedTags.Set(cn.node.ID, true);
-            return cn.node;
-        }
-
-        return null;
-    }
-
-    private void UpdateNodeAndEnqueue(Node node, FastPriorityQueue openSet, int tentativeFF, int fieldIndex)
-    {
-        node.FieldDatas[fieldIndex] = new FieldData(tentativeFF, node.FieldDatas[fieldIndex].Vector);
-        openSet.Enqueue(node, tentativeFF);
-    }*/
 
     [BurstCompile]
     private struct CreateVectorsJob : IJobParallelFor
@@ -475,7 +387,7 @@ public class FlowField_Navigation
         }
     }
 
-    private void CreateVectors(NativeBitArray visitedTags, int width, int fieldIndex)
+    private void CreateVectors(NativeBitArray visitedTags, int width, NativeFieldData fieldData)
     {
         var job = new CreateVectorsJob
         {
@@ -485,42 +397,12 @@ public class FlowField_Navigation
             Offsets = offsets,
             Width = width,
             InvWidth = 1f / width,
-            Vectors = FieldDatas[fieldIndex].Vector,
-            Costs = FieldDatas[fieldIndex].Cost
+            Vectors = fieldData.Vector,
+            Costs = fieldData.Cost
         };
 
-        JobHandle handle = job.Schedule(floor.Grid.Length, 64);
+        JobHandle handle = job.Schedule(grid.Nodes.Length, 64);
         handle.Complete(); 
-
-        /*Parallel.For(0, floor.Grid.Length, i =>
-        {
-            Node node = floor.Grid[i];
-
-            if (visitedTags.IsSet(node.ID) == false) return;
-
-            //int lovestFFNeighbors = int.MaxValue;
-            Vector2 newVector = Vector2.zero;
-
-            for (int j = 0; j < node.NeighborsNode.Length; j++)
-            {
-                var neighbor = node.NeighborsNode[j];
-
-                if (neighbor == null || neighbor.IsSizeClear[0] == false) continue;
-
-                float weight = node.FieldDatas[fieldIndex].Cost - neighbor.FieldDatas[fieldIndex].Cost;
-
-                if (weight > 0)
-                    newVector += node.VectorsToNeighbors[j] * weight;
-
-                // if (neighbor.FieldDatas[fieldIndex].Cost < lovestFFNeighbors)
-                // {
-                //     newVector = neighbor.Position - node.Position;
-                //     lovestFFNeighbors = neighbor.FieldDatas[fieldIndex].Cost;
-                // }
-            }
-
-            node.FieldDatas[fieldIndex] = new FieldData(node.FieldDatas[fieldIndex].Cost, newVector);
-        });*/
     }
 
     /*private void SmoothVectors(int fieldIndex)
@@ -547,21 +429,72 @@ public class FlowField_Navigation
         });
     }*/
 
-    public FlowField_Navigation(Floor floor)
+    private void ExecuteBoxBlocking((Section section, Vector2 position, Vector2 size, int startRow, int endRow, int startCol, int endCol, int nodesPerSide, bool isblock) data)
     {
-        this.floor = floor;
+        Parallel.For(data.startRow, data.endRow + 1, row =>
+        {
+            for (int col = data.startCol; col <= data.endCol; col++)
+            {
+                int index = row * data.nodesPerSide + col;
+
+                Node node = data.section.Nodes[index];
+
+                bool covers = GeometryUtils.IsInside(node.Position, node.Size, data.position, data.size);
+                node.BlockNode(covers, true, data.isblock);
+
+                FieldClearData.IsClear.Set(node.ID, node.IsClear);
+                FieldClearData.IsSizeClear.Set(node.ID, node.IsSizeClear[0]);
+            }
+        });
+    }
+
+    private void ExecuteCircleBlocking((Section section, Vector2 center, float radius, float padding, int startRow, int endRow, int startCol, int endCol, int nodesPerSide, bool isblock) data)
+    {
+        float objR2 = data.radius * data.radius;
+        float padR = data.radius + data.padding;
+        float padR2 = padR * padR;
+
+        Parallel.For(data.startRow, data.endRow + 1, row =>
+        {
+            for (int col = data.startCol; col <= data.endCol; col++)
+            {
+                Node node = data.section.Nodes[row * data.nodesPerSide + col];
+
+                float distSqr = DistSqrToCell(node.Position, node.Size * 0.5f, data.center);
+
+                node.BlockNode(distSqr <= objR2, distSqr <= padR2, data.isblock);
+
+                FieldClearData.IsClear.Set(node.ID, node.IsClear);
+                FieldClearData.IsSizeClear.Set(node.ID, node.IsSizeClear[0]);
+            }
+        });
+    }
+
+    private static float DistSqrToCell(Vector2 cellCenter, float halfCell, Vector2 point)
+    {
+        float dx = Mathf.Max(Mathf.Abs(point.x - cellCenter.x) - halfCell, 0f);
+        float dy = Mathf.Max(Mathf.Abs(point.y - cellCenter.y) - halfCell, 0f);
+        return dx * dx + dy * dy;
+    }
+
+    public FlowField_Navigation(Grid grid)
+    {
+        this.grid = grid;
 
         SetOffsets();
 
         FieldDatas = new List<NativeFieldData>();
-        FieldClearData = new NativeFieldClearData(new NativeBitArray(floor.Grid.Length, Allocator.Persistent),
-                                                    new NativeBitArray(floor.Grid.Length, Allocator.Persistent));
+        FieldClearData = new NativeFieldClearData(new NativeBitArray(grid.Nodes.Length, Allocator.Persistent),
+                                                    new NativeBitArray(grid.Nodes.Length, Allocator.Persistent));
 
-        for(int i = 0; i < floor.Grid.Length; i++)
+        for(int i = 0; i < grid.Nodes.Length; i++)
         {
-            FieldClearData.IsClear.Set(i, floor.Grid[i].IsClear);
-            FieldClearData.IsSizeClear.Set(i, floor.Grid[i].IsSizeClear[0]);
+            FieldClearData.IsClear.Set(i, grid.Nodes[i].IsClear);
+            FieldClearData.IsSizeClear.Set(i, grid.Nodes[i].IsSizeClear[0]);
         }
+
+        grid.OnExecuteBox += ExecuteBoxBlocking;
+        grid.OnExecuteCircle += ExecuteCircleBlocking;
 
         Initialized = true;
     }
@@ -575,58 +508,11 @@ public class FlowField_Navigation
 
         if (offsets.IsCreated)
             offsets.Dispose();
+
+        if (grid != null)
+        {
+            grid.OnExecuteBox -= ExecuteBoxBlocking;
+            grid.OnExecuteCircle -= ExecuteCircleBlocking;
+        }
     }
-
-    /*private class FastPriorityQueue
-    {
-        private List<(int cost, Node node)> elements = new List<(int cost, Node node)>();
-
-        public int Count => elements.Count;
-
-        public void Enqueue(Node node, int cost)
-        {
-            elements.Add((cost, node));
-            int i = elements.Count - 1;
-            while (i > 0)
-            {
-                int parent = (i - 1) / 2;
-                if (elements[i].cost >= elements[parent].cost) break;
-                
-                var temp = elements[i];
-                elements[i] = elements[parent];
-                elements[parent] = temp;
-                i = parent;
-            }
-        }
-
-        public (int cost, Node node) Dequeue()
-        {
-            var result = elements[0];
-            int lastIndex = elements.Count - 1;
-            elements[0] = elements[lastIndex];
-            elements.RemoveAt(lastIndex);
-
-            lastIndex--;
-            int i = 0;
-            while (true)
-            {
-                int left = i * 2 + 1;
-                int right = i * 2 + 2;
-                int smallest = i;
-
-                if (left <= lastIndex && elements[left].cost < elements[smallest].cost) smallest = left;
-                if (right <= lastIndex && elements[right].cost < elements[smallest].cost) smallest = right;
-
-                if (smallest == i) break;
-
-                var temp = elements[i];
-                elements[i] = elements[smallest];
-                elements[smallest] = temp;
-                i = smallest;
-            }
-            return result;
-        }
-
-        public void Clear() => elements.Clear();
-    }*/
 }

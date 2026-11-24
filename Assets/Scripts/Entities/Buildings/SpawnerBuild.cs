@@ -168,8 +168,6 @@ public class SpawnerBuild : Building, ISpawner
         base.Initialize(playerID);
 
         RepositionSpawn(new Vector2(transform.position.x, GetComponent<Collider2D>().bounds.max.y));
-
-        Debug.Log($"spawnPoint = {spawnPoint}");
     }
 
     protected override void OpenUI(bool choose)

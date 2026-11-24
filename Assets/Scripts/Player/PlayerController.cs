@@ -52,7 +52,13 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        if (EventSystem.current.IsPointerOverGameObject() == false && Input.GetMouseButtonDown(0))
+        if (Input.GetKeyDown(KeyCode.LeftAlt) && EventSystem.current.IsPointerOverGameObject() == false)
+        {
+            if (constructionPhantom != null)
+                InstantConstruct();
+        }
+
+        if (Input.GetMouseButtonDown(0) && EventSystem.current.IsPointerOverGameObject() == false)
         {
             if (constructionPhantom != null)
                 Construct();
@@ -60,7 +66,7 @@ public class PlayerController : MonoBehaviour
                 StartChoose();
         }
 
-        if (EventSystem.current.IsPointerOverGameObject() == false && Input.GetMouseButton(0))
+        if (Input.GetMouseButton(0) && EventSystem.current.IsPointerOverGameObject() == false)
             UpdateChooseBox();
 
         if (Input.GetMouseButtonUp(0))
@@ -254,6 +260,21 @@ public class PlayerController : MonoBehaviour
             resetTasks = false;
 
         constructionPhantom.Place(player, resetTasks, constrIndex);
+        constructionPhantom = null;
+
+        if (Input.GetKey(KeyCode.LeftShift))
+            UserInterface.BuildingsUI.SpawnBuilding(constrIndex);
+        else
+            constrIndex = -1;
+    }
+
+    private void InstantConstruct()
+    {
+        // ONLY FOR TESTING PURPOSES, REMOVE LATER
+
+        if (constructionPhantom.PosClear == false) return;
+
+        constructionPhantom.InstantPlace(player, constrIndex);
         constructionPhantom = null;
 
         if (Input.GetKey(KeyCode.LeftShift))

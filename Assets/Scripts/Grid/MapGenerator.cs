@@ -4,6 +4,7 @@ using UnityEngine;
 public class MapGenerator : MonoBehaviour
 {
     [SerializeField] private Floor floor;
+    [SerializeField] private Grid grid;
 
     [Header("Generation Settings")]
     [SerializeField] private float _noiseScale = 0.1f;
@@ -36,6 +37,12 @@ public class MapGenerator : MonoBehaviour
     [ContextMenu("Generate Map")]
     public void GenerateMap()
     {
+        if (grid == null)
+            grid = Grid.Instance;
+
+        if (floor == null)
+            floor = Floor.Instance;
+
         ClearForest();
         ClearIron(); 
 
@@ -52,8 +59,8 @@ public class MapGenerator : MonoBehaviour
         {
             attempts++;
             
-            float x = Random.Range(floor.SizeX.x + 1f, floor.SizeX.y - 1f);
-            float y = Random.Range(floor.SizeY.x + 1f, floor.SizeY.y - 1f);
+            float x = Random.Range(grid.SizeX.x + 1f, grid.SizeX.y - 1f);
+            float y = Random.Range(grid.SizeY.x + 1f, grid.SizeY.y - 1f);
             Vector2 pos = new Vector2(x, y);
 
             if (CalculateSafetyFactor2D(pos) < 1) continue;
@@ -87,10 +94,10 @@ public class MapGenerator : MonoBehaviour
         float safePaddingX = paddingX + maxJitter;
         float safePaddingY = paddingY + maxJitter;
 
-        float minX = floor.SizeX.x + safePaddingX;
-        float maxX = floor.SizeX.y - safePaddingX;
-        float minY = floor.SizeY.x + safePaddingY;
-        float maxY = floor.SizeY.y - safePaddingY;
+        float minX = grid.SizeX.x + safePaddingX;
+        float maxX = grid.SizeX.y - safePaddingX;
+        float minY = grid.SizeY.x + safePaddingY;
+        float maxY = grid.SizeY.y - safePaddingY;
 
         int stepsX = Mathf.FloorToInt((maxX - minX) / _treeSpacing);
         int stepsY = Mathf.FloorToInt((maxY - minY) / _treeSpacing);

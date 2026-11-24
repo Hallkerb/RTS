@@ -1,11 +1,9 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Mirror;
 using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class Floor : MonoBehaviour
 {
@@ -13,26 +11,16 @@ public class Floor : MonoBehaviour
 
     public MapGenerator MapGenerator { get; private set; }
     private NavigationManager navigationManager; 
+    private Grid grid;
+
     private Collider2D сollider;
     [SerializeField] private Transform spawnParent;
 
     public Transform SpawnParent => spawnParent;
 
-    [SerializeField] private float[] unitsRadius;
-
-    [SerializeField] private int sectionsCount;
-    [SerializeField] private float gridSize = 0.2f;
-
-    public Vector2 SizeX { get; private set; }
-    public Vector2 SizeY { get; private set; }
-
-    public Section[] Sections { get; private set; }
-    public Node[] Grid { get; private set; }
 
     [SerializeField] private Transform playersSpawnPosPanel;
     public Transform[] PlayersSpawnPos { get; private set; }
-
-    public bool GridActive { get; private set; }
 
     void Awake()
     {
@@ -41,147 +29,50 @@ public class Floor : MonoBehaviour
         if(!NetworkServer.active) return;
 
         MapGenerator = GetComponent<MapGenerator>();
-        navigationManager = FindFirstObjectByType<NavigationManager>();
         сollider = GetComponent<Collider2D>();
 
         PlayersSpawnPos = new Transform[playersSpawnPosPanel.childCount];
 
         initialize();
 
-        Vector2 position = transform.position;
-        Vector2 localScale = transform.localScale;
-
-        _ = generateSections(position, localScale);
+        SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
-    void Start()
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        if (!NetworkServer.active) return;
+        if (scene.name == "Game" && NetworkServer.active)
+        {
+            if (Grid.Instance == null)
+            {
+                Debug.LogError("Grid.Instance == null!");
+                return;
+            }
 
-        SpawnerManager.Instance.OnSpawn += ReactOnSpawn;
+            if (NavigationManager.Instance == null)
+            {
+                Debug.LogError("NavigationManager.Instance == null!");
+                return;
+            }
 
-        StartCoroutine(GenerateMap());
+            grid = Grid.Instance;
+            navigationManager = NavigationManager.Instance;
+
+            if (grid.IsInitialized)
+                GridInitialized(grid);
+            else
+                Grid.OnInitialized += GridInitialized;
+        }
     }
-
-    public float GetGridSize() => gridSize;
-
-    public float GetUnitRadius(int i) => unitsRadius[i];
 
     private void initialize()
     {
         for (int i = 0; i < playersSpawnPosPanel.childCount; i++)
             PlayersSpawnPos[i] = playersSpawnPosPanel.GetChild(i);
-
-        SizeX = new Vector2(сollider.bounds.min.x, сollider.bounds.max.x);
-        SizeY = new Vector2(сollider.bounds.min.y, сollider.bounds.max.y);
     }
 
-    private IEnumerator GenerateMap()
+    private void GridInitialized(Grid grid)
     {
-        while(GridActive == false || navigationManager?.GetFlowField()?.Initialized == false)
-        {
-            Debug.Log("FlowField not initialized");
-
-            yield return null;
-        }
-
         MapGenerator.GenerateMap();
-    }
-
-    private async Task generateSections(Vector2 position, Vector2 localScale)
-    {
-        try
-        {
-            await Task.Run(() =>
-            {
-                Sections = new Section[sectionsCount];
-
-                float sectionSize = Mathf.Sqrt(localScale.x * localScale.y / sectionsCount);
-
-                Grid = new Node[sectionsCount * (int)Mathf.Round((sectionSize * sectionSize) / (gridSize * gridSize))];
-
-                int columns = (int)Mathf.Round(localScale.x / sectionSize);
-                int lines = (int)Mathf.Round(localScale.y / sectionSize);
-
-                Vector2 constPos = new Vector2(position.x - localScale.x / 2, position.y - localScale.y / 2);
-
-                Parallel.For(0, sectionsCount, i =>
-                {
-                    int line = i / columns;
-                    int column = i % columns;
-
-                    Vector2 position = new Vector2(constPos.x + (column * sectionSize) + sectionSize / 2,
-                                                constPos.y + (line * sectionSize) + sectionSize / 2);
-
-                    Sections[i] = new Section(position, i, sectionSize, gridSize, localScale, unitsRadius[0]);
-                });
-
-                int offset = 0;
-
-                for (int i = 0; i < sectionsCount; i++)
-                {
-                    Array.Copy(Sections[i].Grid, 0, Grid, offset, Sections[i].Grid.Length);
-                    offset += Sections[i].Grid.Length;
-                }
-
-                Grid = Grid.AsParallel()
-                        .OrderBy(n => n.Position.y)
-                        .ThenBy(n => n.Position.x)
-                        .ToArray();
-
-                Parallel.For(0, Grid.Length, i =>
-                {
-                    Grid[i].SetID(i);
-                });
-
-                float totalWidth = SizeX.y - SizeX.x;
-                float totalHeight = SizeY.y - SizeY.x;
-                
-                int nodesX = Mathf.RoundToInt(totalWidth / gridSize);
-                int nodesY = Mathf.RoundToInt(totalHeight / gridSize);
-
-                Parallel.For(0, Grid.Length, i =>
-                {
-                    CalculateNeighborsForNode(i, nodesX, nodesY);
-                });
-            });
-        }
-        catch (Exception ex)
-        {
-            Debug.Log(ex);
-        }
-
-        Debug.Log("Generate sections end");
-        GridActive = true;
-    }
-
-    private void CalculateNeighborsForNode(int index, int nodesX, int nodesY)
-    {
-        int x = index % nodesX;
-        int y = index / nodesX;
-
-        Node currentNode = Grid[index];
-
-        int[] dx = { 0, 0, 1, -1, 1, -1, 1, -1 };
-        int[] dy = { 1, -1, 0, 0, 1, 1, -1, -1 };
-
-        for (int i = 0; i < 8; i++)
-        {
-            int neighborX = x + dx[i];
-            int neighborY = y + dy[i];
-
-            if (neighborX >= 0 && neighborX < nodesX && neighborY >= 0 && neighborY < nodesY)
-            {
-                int neighborIndex = neighborY * nodesX + neighborX;
-                currentNode.NeighborsNode[i] = Grid[neighborIndex];
-                currentNode.VectorsToNeighbors[i] = new Vector2(dx[i], dy[i]);
-            }
-            else
-            {
-                currentNode.NeighborsNode[i] = null;
-                currentNode.VectorsToNeighbors[i] = Vector2.zero;
-            }
-        }
     }
 
     public (Vector3 pos, bool inside) IsCameraInside(Vector3 point)
@@ -202,198 +93,14 @@ public class Floor : MonoBehaviour
 
         return (point, inside);
     }
-
-    private void ReactOnSpawn(GameObject obj)
-    {
-        if (obj.TryGetComponent(out Building building) || (obj.TryGetComponent(out Resource resource) && resource.Type != ResourceType.Food))
-        {
-            Entity entity = obj.GetComponent<Entity>();
-            entity.OnDeath += ReactOnDestroy;
-
-            AsyncEvaluateCollidersNode(entity, true).ContinueWith(t =>
-            {
-                if (t.Exception != null)
-                    Debug.LogError(t.Exception);
-
-            }, TaskScheduler.FromCurrentSynchronizationContext());
-        }
-    }
-
-    private async Task AsyncEvaluateCollidersNode(Entity entity, bool isblock)
-    {
-        var collider = entity.GetComponent<Collider2D>();
-        Vector2 position = collider.transform.TransformPoint(collider.offset);
-        Vector2 size = Vector2.zero;
-
-        switch(entity.Shape.Type)
-        {
-            case EntityShape.ShapeType.Square:
-                var box = collider.GetComponent<BoxCollider2D>();
-                size = Vector2.Scale(box.size, entity.transform.lossyScale);
-                break;
-            case EntityShape.ShapeType.Circle:
-                var circle = collider.GetComponent<CircleCollider2D>();
-                size = new Vector2(circle.radius * 2 * entity.transform.lossyScale.x, circle.radius * 2 * entity.transform.lossyScale.y);
-                break;
-        }
-
-        Debug.Log("AsyncEvaluateCollidersNode start");
-
-        await Task.Run(() => 
-        {
-            float unitRadius = unitsRadius[0];
-            float padding = unitRadius;
-
-            float minX = position.x - size.x / 2 - padding;
-            float maxX = position.x + size.x / 2 + padding;
-            float minY = position.y - size.y / 2 - padding;
-            float maxY = position.y + size.y / 2 + padding;
-
-            Vector2[] corners =
-            {
-                new Vector2(minX, minY),
-                new Vector2(maxX, maxY),
-                new Vector2(minX, maxY),
-                new Vector2(maxX, minY)
-            };
-
-            List<Section> sections = new List<Section>();
-
-            var uniqueSections = corners
-                .Select(corner => Sections.FirstOrDefault(s => s.IsInside(corner)))
-                .Where(s => s != null)
-                .Distinct()
-                .ToList();
-
-            sections.AddRange(uniqueSections);
-
-            Debug.Log($"sections count = {sections.Count}");
-
-            foreach (var section in sections)
-            {
-                float halfSize = section.Size / 2;
-                float gridSize = GetGridSize();
-
-                float localMinX = (position.x - size.x / 2 - padding) - section.Position.x + halfSize;
-                float localMaxX = (position.x + size.x / 2 + padding) - section.Position.x + halfSize;
-
-                float localMinY = (position.y - size.y / 2 - padding) - (section.Position.y - halfSize);
-                float localMaxY = (position.y + size.y / 2 + padding) - (section.Position.y - halfSize);
-
-                int nodesPerSide = Mathf.RoundToInt(section.Size / gridSize);
-
-                int startCol = Mathf.Clamp(Mathf.FloorToInt(localMinX / gridSize), 0, nodesPerSide - 1);
-                int endCol = Mathf.Clamp(Mathf.FloorToInt(localMaxX / gridSize), 0, nodesPerSide - 1);
-
-                int startRow = Mathf.Clamp(Mathf.FloorToInt(localMinY / gridSize), 0, nodesPerSide - 1);
-                int endRow = Mathf.Clamp(Mathf.FloorToInt(localMaxY / gridSize), 0, nodesPerSide - 1);
-
-                /*Debug.Log(@$"Node count = {(endRow - startRow + 1) * (endCol - startCol + 1)}
-                Build position = {position}, Section position = {section.Position}
-                Build size = {size}, unitRadius = {unitRadius}, padding = {padding}, Section size = {section.Size}, Section halfSize = {halfSize}
-
-                gridSize = {gridSize}
-                nodesPerSide = {nodesPerSide}
-
-                localMinX = {localMinX}, localMaxX = {localMaxX}
-                localMinY = {localMinY}, localMaxY = {localMaxY}
-                startCol = {startCol}, endCol = {endCol}
-                startRow = {startRow}, endRow = {endRow}");*/
-
-                switch(entity.Shape.Type)
-                {
-                    case EntityShape.ShapeType.Square:
-                        ExecuteBoxBlocking(section, position, size, startRow, endRow, startCol, endCol, nodesPerSide, isblock);
-                        break;
-                    case EntityShape.ShapeType.Circle:
-                        ExecuteCircleBlocking(section, position, size.x / 2, unitsRadius[0], startRow, endRow, startCol, endCol, nodesPerSide, isblock);
-                        break;
-                }
-            }
-        });
-
-        Debug.Log("AsyncEvaluateCollidersNode end");
-    }
-
-    private void ExecuteBoxBlocking(Section section, Vector2 position, Vector2 size, int startRow, int endRow, int startCol, int endCol, int nodesPerSide, bool isblock)
-    {
-        var fieldClearData = navigationManager.GetFlowField().FieldClearData;
-
-        Parallel.For(startRow, endRow + 1, row =>
-        {
-            for (int col = startCol; col <= endCol; col++)
-            {
-                int index = row * nodesPerSide + col;
-
-                Node node = section.Grid[index];
-
-                if (isblock)
-                    node.BlockNode(node.IsClear == false || GeometryUtils.IsInside(node.Position, node.Size, position, size), true);
-                else
-                    node.BlockNode(false, false);
-
-                int globalIndex = node.ID;
-
-                fieldClearData.IsClear.Set(globalIndex, node.IsClear);
-                fieldClearData.IsSizeClear.Set(globalIndex, node.IsSizeClear[0]);
-            }
-        });
-    }
-
-    private void ExecuteCircleBlocking(Section section, Vector2 center, float radius, float padding, int startRow, int endRow, int startCol, int endCol, int nodesPerSide, bool isblock)
-    {
-        var fieldClearData = navigationManager.GetFlowField().FieldClearData;
-
-        //float objectRadiusSqr = radius * radius;
-        //float paddedRadiusSqr = (radius + padding) * (radius + padding);
-
-        Parallel.For(startRow, endRow + 1, row =>
-        {
-            for (int col = startCol; col <= endCol; col++)
-            {
-                int index = row * nodesPerSide + col;
-                Node node = section.Grid[index];
-
-                if (isblock)
-                {
-                    float distSqr = (node.Position - center).sqrMagnitude;
-
-                    bool isInsideObject = GeometryUtils.IsInsideCircle(distSqr, radius);
-                    bool isInsidePadding = GeometryUtils.IsInsideCircle(distSqr, radius + padding);
-
-                    node.BlockNode(node.IsClear == false || isInsideObject, node.IsSizeClear[0] == false || isInsidePadding);
-                }
-                else
-                    node.BlockNode(false, false);
-
-                fieldClearData.IsClear.Set(node.ID, node.IsClear);
-                fieldClearData.IsSizeClear.Set(node.ID, node.IsSizeClear[0]);
-            }
-        });
-    }
-
-    private void ReactOnDestroy(Entity entity)
-    {
-        if (entity.TryGetComponent(out Building building))
-        {
-            building.OnDeath -= ReactOnDestroy;
-
-            AsyncEvaluateCollidersNode(building, false).ContinueWith(t =>
-            {
-                if (t.Exception != null)
-                    Debug.LogError(t.Exception);
-
-            }, TaskScheduler.FromCurrentSynchronizationContext());
-        }
-    }
     
     #if UNITY_EDITOR
 
     public void OnDrawGizmos()
     {
-        if (Sections == null) return;
+        if (grid == null || grid.Sections == null) return;
 
-        foreach(var section in Sections)
+        foreach(var section in grid.Sections)
         {
             Gizmos.color = Color.yellow;
             Gizmos.DrawWireCube(section.Position, new Vector2(section.Size, section.Size));
@@ -401,11 +108,11 @@ public class Floor : MonoBehaviour
 
         var flowField = navigationManager.GetFlowField();
 
-        for(int i = 0; i < Grid.Length; i++)
+        for(int i = 0; i < grid.Nodes.Length; i++)
         {
-            var node = Grid[i];
+            var node = grid.Nodes[i];
 
-            if (!Grid[i].IsClear)
+            if (!grid.Nodes[i].IsClear)
             {
                 Gizmos.color = Color.red;
                 Gizmos.DrawCube(node.Position, new Vector2(node.Size * 0.9f, node.Size * 0.9f));
@@ -417,7 +124,7 @@ public class Floor : MonoBehaviour
                 Gizmos.DrawCube(node.Position, new Vector2(node.Size * 0.6f, node.Size * 0.6f));
             }
 
-            if (!Grid[i].IsSizeClear[0])
+            if (!grid.Nodes[i].IsSizeClear[0])
             {
                 Gizmos.color = Color.blue;
                 Gizmos.DrawWireCube(node.Position, new Vector2(node.Size * 0.9f, node.Size * 0.9f));

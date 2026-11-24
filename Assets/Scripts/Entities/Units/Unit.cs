@@ -87,7 +87,7 @@ public abstract class Unit : Entity, IMovable, IAttackable
     {
         base.Start();
 
-        navigation = new AStar_Navigation(Floor.Instance, this);
+        navigation = new AStar_Navigation(Grid.Instance, this);
     }
 
     void Update()

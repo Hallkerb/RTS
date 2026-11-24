@@ -1,51 +1,38 @@
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 public static class NavigationHelper
 {
-    public static Node SetTargetNode(Floor floor, Unit unit, Vector2 targetPoint, float stepSize = 0)
+    public static Node SetTargetNode(Grid grid, Vector2 targetPoint)
     {
-        HashSet<Node> openTargetSet = new HashSet<Node>();
-        HashSet<Node> closedTargetSet = new HashSet<Node>();
+        Node first = GetNode(grid, grid.GridSizeX, grid.GridSizeY, grid.GetGridSize(), targetPoint);
+
+        if (first.IsSizeClear[0]) return first;
+
+        var heap = new FastPriorityQueue<Node>();
+        var visited = new HashSet<int> { first.ID };
+        heap.Enqueue(0, first);
 
         int iteration = 0;
 
-        targetPoint.x = Mathf.Clamp(targetPoint.x, floor.SizeX.x, floor.SizeX.y);
-        targetPoint.y = Mathf.Clamp(targetPoint.y, floor.SizeY.x, floor.SizeY.y);
-
-        Node firstNode = GetNode(floor, targetPoint);
-        Node node = firstNode;
-        node.g = 0;
-        node.h = 0;
-
-        openTargetSet.Add(node);
-
-        while(node.IsSizeClear[0] == false && openTargetSet.Count > 0 && iteration < 1000)
+        while(heap.Count > 0 && iteration < 10000)
         {
-            openTargetSet.Remove(node);
-            closedTargetSet.Add(node);
+            Node node = heap.Dequeue().element;
+
+            if (node.IsSizeClear[0])
+                return node;
 
             foreach (Node neighbor in node.NeighborsNode)
             {
-                if (neighbor == null || closedTargetSet.Contains(neighbor))
-                    continue;
-                else if (!openTargetSet.Contains(neighbor))
-                {
-                    openTargetSet.Add(neighbor);
+                if (neighbor == null || !visited.Add(neighbor.ID)) continue;
 
-                    neighbor.g = Vector2.Distance(firstNode.Position, neighbor.Position);
-
-                    neighbor.h = 0;
-                }
+                heap.Enqueue(Vector2.Distance(first.Position, neighbor.Position), neighbor);
             }
-
-            node = openTargetSet.OrderBy(n => node.IsSizeClear[0] == false).ThenBy(n => n.f).FirstOrDefault();
 
             iteration++;
         }
 
-        return node;
+        return first;
     }
 
     public static bool IsPathClear(Node startNode, Vector2 endPoint, Unit unit, Queue<Node> openSet, HashSet<Node> closedSet, float stepSize = 0)
@@ -116,11 +103,14 @@ public static class NavigationHelper
 
         float projectionOnAxis = Vector2.Dot(localPoint, dir);
 
-        if (projectionOnAxis < -halfHeight || projectionOnAxis > halfHeight)
+        float length = axis.magnitude;
+
+        if (projectionOnAxis < -halfHeight || projectionOnAxis > length + halfHeight)
             return false;
 
         float projectionOnPerpendicular = Vector2.Dot(localPoint, perpendicular);
-        if (Mathf.Abs(projectionOnPerpendicular) > halfWidth)
+        
+        if (Mathf.Abs(projectionOnPerpendicular) > halfWidth + stepSize)
             return false;
 
         return true;
@@ -181,14 +171,14 @@ public static class NavigationHelper
         return true;
     }
 
-    public static Node GetNode(Floor floor, Vector2 point)
+    public static Node GetNode(Grid grid, int gridSizeX, int gridSizeY, float gridSize, Vector2 point)
     {
-        Section section = floor.Sections.FirstOrDefault(s => s.IsInside(point));
+        int x = Mathf.FloorToInt((point.x - grid.SizeX.x) / gridSize);
+        int y = Mathf.FloorToInt((point.y - grid.SizeY.x) / gridSize);
 
-        if(section == null) return null;
+        x = Mathf.Clamp(x, 0, gridSizeX - 1);
+        y = Mathf.Clamp(y, 0, gridSizeY - 1);
 
-        Node node = section.Grid.FirstOrDefault(n => n.IsInside(point));
-
-        return node;
+        return grid.Nodes[y * gridSizeX + x];
     }
 }

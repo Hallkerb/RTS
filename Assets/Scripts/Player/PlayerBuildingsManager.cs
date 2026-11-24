@@ -76,4 +76,24 @@ public class PlayerBuildingsManager : NetworkBehaviour
         player.UnitsController.SetUnitsBuilding(unitChoose, newBuilding, player.ID, resetTasks);
         newBuilding.StartConstruct();
     }
+
+    public void InstantPlaceConstruct(int index, Vector2 pos)
+    {
+        // ONLY FOR TESTING PURPOSES, REMOVE LATER
+
+        InstantCmdPlaceConstruct(index, pos);
+    }
+
+    [Command]
+    private void InstantCmdPlaceConstruct(int index, Vector2 pos)
+    {
+        // ONLY FOR TESTING PURPOSES, REMOVE LATER
+
+        var spawnData = player.Controller.UserInterface.BuildingsUI.GetSpawnData(index);
+        var phantomPrefub = spawnData.Entity as BuildingPhantom;
+
+        if (phantomPrefub == null) return;
+
+        SpawnerManager.Instance.Spawn(phantomPrefub.Building, pos, Quaternion.identity, player.ID, connectionToClient);
+    }
 }

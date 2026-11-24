@@ -2862,7 +2862,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3103285256569740684, guid: a2217f9595baff44eacbac92c27d59d0, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -5090.271
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3103285256569740684, guid: a2217f9595baff44eacbac92c27d59d0, type: 3}
       propertyPath: m_LocalRotation.w
@@ -5894,7 +5894,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 627055936392725623, guid: 87a2cb88557d929418530f9032aaebba, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -5090.271
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 627055936392725623, guid: 87a2cb88557d929418530f9032aaebba, type: 3}
       propertyPath: m_LocalRotation.w
@@ -7320,7 +7320,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1102778324759935743, guid: cb97ba89acecac84a9c0281633c8515c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -5090.271
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1102778324759935743, guid: cb97ba89acecac84a9c0281633c8515c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -7392,6 +7392,7 @@ GameObject:
   - component: {fileID: 1750825583}
   - component: {fileID: 1750825585}
   - component: {fileID: 1750825586}
+  - component: {fileID: 1750825588}
   - component: {fileID: 1750825587}
   m_Layer: 3
   m_Name: Floor
@@ -7534,10 +7535,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   spawnParent: {fileID: 627902386}
-  unitsRadius:
-  - 0.35
-  sectionsCount: 36
-  gridSize: 0.2
   playersSpawnPosPanel: {fileID: 1087461374}
 --- !u!114 &1750825587
 MonoBehaviour:
@@ -7552,6 +7549,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MapGenerator
   floor: {fileID: 1750825586}
+  grid: {fileID: 1750825588}
   _noiseScale: 0.1
   _densityThreshold: 0.6
   _mapSeed: -1
@@ -7564,6 +7562,22 @@ MonoBehaviour:
   _minDistanceBetweenTrees: 0.5
   _safetyRadius: 2
   _falloffRadius: 3
+--- !u!114 &1750825588
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1750825582}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a8225ef32a4a0f644a82f1bb230c96a0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Grid
+  unitsRadius:
+  - 0.35
+  sectionsCount: 36
+  gridSize: 0.2
 --- !u!1 &1770999126
 GameObject:
   m_ObjectHideFlags: 0

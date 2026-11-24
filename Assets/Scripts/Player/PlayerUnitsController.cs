@@ -10,6 +10,7 @@ public class PlayerUnitsController : NetworkBehaviour
     private NavigationManager navigationManager;
     private Player player;
     private Floor floor;
+    private Grid grid;
 
     void Awake()
     {
@@ -19,7 +20,7 @@ public class PlayerUnitsController : NetworkBehaviour
 
     void Start()
     {
-        floor = Floor.Instance;
+        grid = Grid.Instance;
     }
 
     [Command]
@@ -52,8 +53,6 @@ public class PlayerUnitsController : NetworkBehaviour
                     case GameObject go when go.TryGetComponent(out Entity target):
                         Vector2 targetPos = target.transform.position;
 
-                        //Debug.Log("Clicked on entity");
-
                         if (target.PlayerID >= 0 && target.PlayerID != playerID)
                             _ = AssignTaskToUnitsAsync(safeUnits, target, targetPos, unit => {if (unit is IAttackable attackable) attackable.SetAttackTask(target, false);}, playerID);
                         else if (target.TryGetComponent(out BuildingPhantom construct))
@@ -61,9 +60,9 @@ public class PlayerUnitsController : NetworkBehaviour
                         else if (target.TryGetComponent(out Resource resource))
                         {
                             if (resource.Type == ResourceType.Materials)
-                                target = GetAccessibleTree(resource, hit[0], safeUnits[0].transform.position);
+                                target = GetAccessibleResource(resource, hit[0], safeUnits[0].transform.position);
 
-                            Debug.Log("Target: " + target);
+                            //Debug.Log("Target: " + target);
 
                             _ = AssignTaskToUnitsAsync(safeUnits, target, targetPos, unit => {if (unit is IHarvester harvester) harvester.SetHarvestTask(target, false);}, playerID);
                         }
@@ -100,9 +99,9 @@ public class PlayerUnitsController : NetworkBehaviour
     }
 
     [Server]
-    public Entity GetAccessibleTree(Resource resource, Collider2D resourceCollider, Vector3 unitPos)
+    public Entity GetAccessibleResource(Resource resource, Collider2D resourceCollider, Vector3 unitPos)
     {
-        if (IsTreeAccessible(resource.transform, resourceCollider, resource.transform.position, resource.Shape))
+        if (IsResourceAccessible(resource.transform, resourceCollider, resource.transform.position, resource.Shape))
             return resource;
 
         var circle = resourceCollider as CircleCollider2D;
@@ -121,7 +120,7 @@ public class PlayerUnitsController : NetworkBehaviour
             {
                 if (hit.TryGetComponent<Resource>(out var currentResource) && currentResource.Type == ResourceType.Materials)
                 {
-                    if (IsTreeAccessible(currentResource.transform, hit, currentResource.transform.position, currentResource.Shape))
+                    if (IsResourceAccessible(currentResource.transform, hit, currentResource.transform.position, currentResource.Shape))
                         return currentResource;
                 }
             }
@@ -131,10 +130,8 @@ public class PlayerUnitsController : NetworkBehaviour
     }
 
     [Server]
-    private bool IsTreeAccessible(Transform tree, Collider2D treeCollider, Vector2 treePos, EntityShape treeShape)
+    private bool IsResourceAccessible(Transform resourceTransform, Collider2D resourceCollider, Vector2 resourcePos, EntityShape resourceShape)
     {
-        Vector2 treeSize = Vector2.zero;
-
         Vector2[] offsets = {
             Vector2.up,
             Vector2.down,
@@ -142,28 +139,28 @@ public class PlayerUnitsController : NetworkBehaviour
             Vector2.right,
         };
 
-        // switch(treeShape.Type)
+        // switch(resourceShape.Type)
         // {
         //     case EntityShape.ShapeType.Square:
-        //         var box = treeCollider as BoxCollider2D;
-        //         treeSize = Vector2.Scale(box.size, tree.lossyScale);
+        //         var box = resourceCollider as BoxCollider2D;
+        //         resourceSize = Vector2.Scale(box.size, resourceTransform.lossyScale);
         //         break;
         //     case EntityShape.ShapeType.Circle:
-        //         var circle = treeCollider as CircleCollider2D;
-        //         treeSize = new Vector2(circle.radius * 2 * tree.lossyScale.x, circle.radius * 2 * tree.lossyScale.y);
+        //         var circle = resourceCollider as CircleCollider2D;
+        //         resourceSize = new Vector2(circle.radius * 2 * resourceTransform.lossyScale.x, circle.radius * 2 * resourceTransform.lossyScale.y);
         //         break;
         // }
 
-        var circle = treeCollider as CircleCollider2D;
-        treeSize = new Vector2(circle.radius * 2 * tree.lossyScale.x, circle.radius * 2 * tree.lossyScale.y);
+        var circle = resourceCollider as CircleCollider2D;
+        Vector2 resourceSize = new Vector2(circle.radius * 2 * resourceTransform.lossyScale.x, circle.radius * 2 * resourceTransform.lossyScale.y);
 
         for(int i = 0; i < offsets.Length; i++)
         {
-            Vector2 offset = treePos + offsets[i] * treeSize / 2 + offsets[i] * floor.GetUnitRadius(0) + offsets[i] * floor.GetGridSize();
+            Vector2 offset = resourcePos + offsets[i] * resourceSize / 2 + offsets[i] * grid.GetUnitRadius(0) + offsets[i] * grid.GetGridSize();
 
-            Node node = NavigationHelper.GetNode(floor, offset);
+            Node node = NavigationHelper.GetNode(grid, grid.GridSizeX, grid.GridSizeY, grid.GetGridSize(), offset);
 
-            if (node != null && node.IsSizeClear[0])
+            if (node.IsSizeClear[0])
                 return true;
         }
 

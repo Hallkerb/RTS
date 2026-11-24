@@ -30,7 +30,7 @@ public class FogOfWarManager : MonoBehaviour
 
     void Start()
     {
-        worldSize = new Vector2(Floor.Instance.SizeX.x, Floor.Instance.SizeY.x);
+        worldSize = new Vector2(Grid.Instance.SizeX.x, Grid.Instance.SizeY.x);
     }
 
     void LateUpdate()

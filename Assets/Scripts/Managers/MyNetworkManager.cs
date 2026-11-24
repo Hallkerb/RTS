@@ -134,10 +134,11 @@ public class MyNetworkManager : NetworkManager
     private void InitializeTowns()
     {
         Floor floor = Floor.Instance;
+        Grid grid = Grid.Instance;
 
-        if (floor == null)
+        if (floor == null || grid == null)
         {
-            Debug.LogError("Floor == null!");
+            Debug.LogError("Floor or Grid == null!");
             return;
         }
 
@@ -145,13 +146,13 @@ public class MyNetworkManager : NetworkManager
 
         spawnedTownHalls = new TownHall[NetworkServer.connections.Count];
 
-        StartCoroutine(SpawnTownsCor(floor));
+        StartCoroutine(SpawnTownsCor(floor, grid));
         StartCoroutine(InitializeTownsCor());
     }
 
-    private IEnumerator SpawnTownsCor(Floor floor)
+    private IEnumerator SpawnTownsCor(Floor floor, Grid grid)
     {
-        while (floor.GridActive == false) yield return null;
+        while (grid.IsInitialized == false) yield return null;
 
         foreach (var conn in NetworkServer.connections.Values)
         {

@@ -14,31 +14,34 @@ public enum NavigationMode
 
 public class NavigationManager : MonoBehaviour
 {
+    public static NavigationManager Instance { get; private set; }
+
     private FlowField_Navigation flowField;
-    private Floor floor;
+    private Grid grid;
 
     public FlowField_Navigation GetFlowField() => flowField;
 
     private void Awake()
     {
+        Instance = this;
+
         if(!NetworkServer.active) return;
 
-        floor = FindFirstObjectByType<Floor>();
-
-        StartCoroutine(InitializeFlowField());
+        if (Grid.Instance != null && Grid.Instance.IsInitialized)
+        {
+            InitializeFlowField(Grid.Instance);
+        }
+        else
+        {
+            Grid.OnInitialized += InitializeFlowField;
+        }
     }
 
-    private IEnumerator InitializeFlowField()
+    private void InitializeFlowField(Grid grid)
     {
-        if (floor == null) 
-        {
-            Debug.LogError($"Floor == null");
-            yield break;
-        }
+        this.grid = grid;
 
-        while (floor.GridActive == false) yield return null;
-
-        flowField = new FlowField_Navigation(floor);
+        flowField = new FlowField_Navigation(grid);
 
         Debug.Log("FlowField Initialized");
     }
@@ -80,15 +83,15 @@ public class NavigationManager : MonoBehaviour
     [Server]
     public Vector2 GetVectorToNextNode(Vector2 position, int fieldIndex)
     {
-        float minX = floor.SizeX.x;
-        float maxX = floor.SizeX.y;
-        float minY = floor.SizeY.x;
-        float maxY = floor.SizeY.y;
+        float minX = grid.SizeX.x;
+        float maxX = grid.SizeX.y;
+        float minY = grid.SizeY.x;
+        float maxY = grid.SizeY.y;
 
         if (position.x < minX || position.x >= maxX || position.y < minY || position.y >= maxY)
             return Vector2.zero;
 
-        float cellSize = floor.GetGridSize();
+        float cellSize = grid.GetGridSize();
         int gridWidth = Mathf.RoundToInt((maxX - minX) / cellSize);
 
         int x = Mathf.FloorToInt((position.x - minX) / cellSize);
@@ -122,15 +125,15 @@ public class NavigationManager : MonoBehaviour
     [Server]
     public Vector2 GetNormalizedVectorToNextNode(Vector2 position, int fieldIndex)
     {
-        float minX = floor.SizeX.x;
-        float maxX = floor.SizeX.y;
-        float minY = floor.SizeY.x;
-        float maxY = floor.SizeY.y;
+        float minX = grid.SizeX.x;
+        float maxX = grid.SizeX.y;
+        float minY = grid.SizeY.x;
+        float maxY = grid.SizeY.y;
 
         if (position.x < minX || position.x >= maxX || position.y < minY || position.y >= maxY)
             return Vector2.zero;
 
-        float cellSize = floor.GetGridSize();
+        float cellSize = grid.GetGridSize();
         int gridWidth = Mathf.RoundToInt((maxX - minX) / cellSize);
 
         int x = Mathf.FloorToInt((position.x - minX) / cellSize);
