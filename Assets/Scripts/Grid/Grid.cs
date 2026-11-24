@@ -28,8 +28,6 @@ public class Grid : MonoBehaviour
 
     public bool IsInitialized { get; private set; }
 
-    public event Action<(Section section, Vector2 position, Vector2 size, int startRow, int endRow, int startCol, int endCol, int nodesPerSide, bool isblock)> OnExecuteBox;
-    public event Action<(Section section, Vector2 center, float radius, float padding, int startRow, int endRow, int startCol, int endCol, int nodesPerSide, bool isblock)> OnExecuteCircle;
     public static event Action<Grid> OnInstantiated;
     public static event Action<Grid> OnInitialized;
 
@@ -260,14 +258,60 @@ public class Grid : MonoBehaviour
                 switch(entity.Shape.Type)
                 {
                     case EntityShape.ShapeType.Square:
-                        OnExecuteBox?.Invoke((section, position, size, startRow, endRow, startCol, endCol, nodesPerSide, isblock));
+                        ExecuteBoxBlocking((section, position, size, startRow, endRow, startCol, endCol, nodesPerSide, isblock));
                         break;
                     case EntityShape.ShapeType.Circle:
-                        OnExecuteCircle?.Invoke((section, position, size.x / 2, unitsRadius[0], startRow, endRow, startCol, endCol, nodesPerSide, isblock));
+                        ExecuteCircleBlocking((section, position, size.x / 2, unitsRadius[0], startRow, endRow, startCol, endCol, nodesPerSide, isblock));
                         break;
                 }
             }
         });
+    }
+
+    private void ExecuteBoxBlocking((Section section, Vector2 position, Vector2 size, int startRow, int endRow, int startCol, int endCol, int nodesPerSide, bool isblock) data)
+    {
+        Parallel.For(data.startRow, data.endRow + 1, row =>
+        {
+            for (int col = data.startCol; col <= data.endCol; col++)
+            {
+                int index = row * data.nodesPerSide + col;
+
+                Node node = data.section.Nodes[index];
+
+                bool covers = GeometryUtils.IsInside(node.Position, node.Size, data.position, data.size);
+                node.BlockNode(covers, true, data.isblock);
+
+                NavigationManager.Instance.GetFlowField().SetFieldClearData(node.ID, node.IsClear, node.IsSizeClear);
+            }
+        });
+    }
+
+    private void ExecuteCircleBlocking((Section section, Vector2 center, float radius, float padding, int startRow, int endRow, int startCol, int endCol, int nodesPerSide, bool isblock) data)
+    {
+        float objR2 = data.radius * data.radius;
+        float padR = data.radius + data.padding;
+        float padR2 = padR * padR;
+
+        Parallel.For(data.startRow, data.endRow + 1, row =>
+        {
+            for (int col = data.startCol; col <= data.endCol; col++)
+            {
+                Node node = data.section.Nodes[row * data.nodesPerSide + col];
+
+                float distSqr = DistSqrToCell(node.Position, node.Size * 0.5f, data.center);
+
+                node.BlockNode(distSqr <= objR2, distSqr <= padR2, data.isblock);
+
+                NavigationManager.Instance.GetFlowField().SetFieldClearData(node.ID, node.IsClear, node.IsSizeClear);
+            }
+        });
+    }
+
+    private static float DistSqrToCell(Vector2 cellCenter, float halfCell, Vector2 point)
+    {
+        float dx = Mathf.Max(Mathf.Abs(point.x - cellCenter.x) - halfCell, 0f);
+        float dy = Mathf.Max(Mathf.Abs(point.y - cellCenter.y) - halfCell, 0f);
+        return dx * dx + dy * dy;
     }
 
     private void ReactOnDestroy(Entity entity)

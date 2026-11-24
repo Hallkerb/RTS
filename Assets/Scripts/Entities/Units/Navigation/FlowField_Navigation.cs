@@ -429,52 +429,10 @@ public class FlowField_Navigation
         });
     }*/
 
-    private void ExecuteBoxBlocking((Section section, Vector2 position, Vector2 size, int startRow, int endRow, int startCol, int endCol, int nodesPerSide, bool isblock) data)
+    public void SetFieldClearData(int index, bool isClear, bool[] isSizeClear)
     {
-        Parallel.For(data.startRow, data.endRow + 1, row =>
-        {
-            for (int col = data.startCol; col <= data.endCol; col++)
-            {
-                int index = row * data.nodesPerSide + col;
-
-                Node node = data.section.Nodes[index];
-
-                bool covers = GeometryUtils.IsInside(node.Position, node.Size, data.position, data.size);
-                node.BlockNode(covers, true, data.isblock);
-
-                FieldClearData.IsClear.Set(node.ID, node.IsClear);
-                FieldClearData.IsSizeClear.Set(node.ID, node.IsSizeClear[0]);
-            }
-        });
-    }
-
-    private void ExecuteCircleBlocking((Section section, Vector2 center, float radius, float padding, int startRow, int endRow, int startCol, int endCol, int nodesPerSide, bool isblock) data)
-    {
-        float objR2 = data.radius * data.radius;
-        float padR = data.radius + data.padding;
-        float padR2 = padR * padR;
-
-        Parallel.For(data.startRow, data.endRow + 1, row =>
-        {
-            for (int col = data.startCol; col <= data.endCol; col++)
-            {
-                Node node = data.section.Nodes[row * data.nodesPerSide + col];
-
-                float distSqr = DistSqrToCell(node.Position, node.Size * 0.5f, data.center);
-
-                node.BlockNode(distSqr <= objR2, distSqr <= padR2, data.isblock);
-
-                FieldClearData.IsClear.Set(node.ID, node.IsClear);
-                FieldClearData.IsSizeClear.Set(node.ID, node.IsSizeClear[0]);
-            }
-        });
-    }
-
-    private static float DistSqrToCell(Vector2 cellCenter, float halfCell, Vector2 point)
-    {
-        float dx = Mathf.Max(Mathf.Abs(point.x - cellCenter.x) - halfCell, 0f);
-        float dy = Mathf.Max(Mathf.Abs(point.y - cellCenter.y) - halfCell, 0f);
-        return dx * dx + dy * dy;
+        FieldClearData.IsClear.Set(index, isClear);
+        FieldClearData.IsSizeClear.Set(index, isSizeClear[0]);
     }
 
     public FlowField_Navigation(Grid grid)
@@ -493,9 +451,6 @@ public class FlowField_Navigation
             FieldClearData.IsSizeClear.Set(i, grid.Nodes[i].IsSizeClear[0]);
         }
 
-        grid.OnExecuteBox += ExecuteBoxBlocking;
-        grid.OnExecuteCircle += ExecuteCircleBlocking;
-
         Initialized = true;
     }
 
@@ -508,11 +463,5 @@ public class FlowField_Navigation
 
         if (offsets.IsCreated)
             offsets.Dispose();
-
-        if (grid != null)
-        {
-            grid.OnExecuteBox -= ExecuteBoxBlocking;
-            grid.OnExecuteCircle -= ExecuteCircleBlocking;
-        }
     }
 }
