@@ -23,24 +23,14 @@ public struct BuildingData
     }
 }
 
-public struct AStarNodeData
-{
-    public int parent;
-    public float g; // Distance from start
-
-    public AStarNodeData(int parent, float g)
-    {
-        this.parent = parent;
-        this.g = g;
-    }
-}
-
 public class Node
 {
     //private GameObject SectionObject;
 
     public Node[] NeighborsNode { get; private set; } = new Node[8];
     public Vector2[] VectorsToNeighbors { get; private set; } = new Vector2[8];
+
+    public Section Section { get; }
 
     public Vector2 Position { get; }
 
@@ -136,8 +126,9 @@ public class Node
         IsSizeClear[0] = !borderBlocked;
     }
 
-    public Node(Vector2 _position, float gridSize, int sizeCount, int id, Vector2 mapSize, float unitRadius)
+    public Node(Section section, Vector2 _position, float gridSize, int sizeCount, int id, Vector2 mapSize, float unitRadius)
     {
+        Section = section;
         Position = _position;
         ID = id;
         Size = gridSize;

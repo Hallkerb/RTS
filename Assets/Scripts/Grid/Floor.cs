@@ -13,7 +13,6 @@ public class Floor : MonoBehaviour
     private NavigationManager navigationManager; 
     private Grid grid;
 
-    private Collider2D сollider;
     [SerializeField] private Transform spawnParent;
 
     public Transform SpawnParent => spawnParent;
@@ -29,7 +28,6 @@ public class Floor : MonoBehaviour
         if(!NetworkServer.active) return;
 
         MapGenerator = GetComponent<MapGenerator>();
-        сollider = GetComponent<Collider2D>();
 
         PlayersSpawnPos = new Transform[playersSpawnPosPanel.childCount];
 

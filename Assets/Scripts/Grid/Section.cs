@@ -1,6 +1,6 @@
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
+using System;
+using System.Threading;
 
 public class Section
 {
@@ -12,41 +12,22 @@ public class Section
 
     public Node[] Nodes { get; private set; }
 
-    //public GameObject[] Walls;
-    //public GameObject[] Cells;
+    private static int globalVersion;
+    public static int CurrentVersion => Volatile.Read(ref globalVersion);
+    public int BlockVersion { get; private set; }
 
-    /*private void SpawnWalls(float maxMaterialForWall, int maxWalls)
+    public event Action<Section, bool> OnCollidersChanged;
+
+    public void MarkChanged(bool blocked)
     {
-        int countWalls = Random.Range(maxWalls / 2, maxWalls);
+        if (blocked)
+            BlockVersion = Interlocked.Increment(ref globalVersion);
+    }
 
-        Walls = new GameObject[countWalls];
-
-        for(int i = 0; i < countWalls; i++)
-        {
-            float materialForWall = maxMaterialForWall / countWalls;
-
-            Walls[i] = new GameObject("Wall");
-
-            Walls[i].AddComponent<Canvas>();
-            Walls[i].AddComponent<Image>().color = Color.black;
-            Walls[i].AddComponent<BoxCollider2D>();
-
-            float sizeX = Random.Range(materialForWall / 2, materialForWall);
-            materialForWall -= sizeX;
-            float sizeY = Mathf.Max(1f, materialForWall);
-
-            Walls[i].GetComponent<RectTransform>().sizeDelta = new Vector2(1, 1);
-            Walls[i].transform.localScale = new Vector2(sizeX, sizeY);
-            Walls[i].transform.rotation = Quaternion.Euler(0, 0, Random.Range(0f, 360f));;
-
-            float halfSize = Size / 2;
-
-            float posX = Random.Range(Position.x - halfSize, Position.x + halfSize);
-            float posY = Random.Range(Position.y - halfSize, Position.y + halfSize);
-
-            Walls[i].transform.position = new Vector2(posX, posY);
-        }
-    }*/
+    public void RaiseCollidersChanged(bool blocked)
+    {
+        OnCollidersChanged?.Invoke(this, blocked);
+    }
 
     public void SpawnGrid(float gridSize, Vector2 mapSize, float unitRadius)
     {
@@ -72,7 +53,7 @@ public class Section
                                                 Position.y - halfSize + (line * gridSize) + gridSize / 2);
 
 
-            Nodes[i] = new Node(nodePosition, gridSize, 1, i + ID * gridCount, mapSize, unitRadius);
+            Nodes[i] = new Node(this, nodePosition, gridSize, 1, i + ID * gridCount, mapSize, unitRadius);
         }
         
         Debug.Log("Spawn grid end");

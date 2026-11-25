@@ -4,23 +4,28 @@ using System.Linq;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using UnityEngine.SceneManagement;
 
 public class PlayerUnitsController : NetworkBehaviour
 {
     private NavigationManager navigationManager;
+    private NavigationLineRenderer navigationLineRenderer;
     private Player player;
-    private Floor floor;
     private Grid grid;
 
     void Awake()
     {
         player = GetComponent<Player>();
-        navigationManager = FindFirstObjectByType<NavigationManager>();
     }
 
     void Start()
     {
+        navigationManager = NavigationManager.Instance;
+        navigationLineRenderer = NavigationLineRenderer.Instance;
         grid = Grid.Instance;
+
+        if (navigationLineRenderer != null)
+            navigationLineRenderer.Initialize(player);
     }
 
     [Command]

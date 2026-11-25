@@ -64,7 +64,9 @@ public class FlowField_Navigation
     private List<UnitsInField> Fields { get; set; } = new List<UnitsInField>();
     private Stack<int> emptyFields = new Stack<int>();
     private NativeArray<int2> offsets;
+
     private readonly object fieldsLock = new object();
+    private readonly object clearLock = new object();
 
     public bool Initialized { get; private set; } = false;
 
@@ -99,52 +101,51 @@ public class FlowField_Navigation
 
             NativeBitArray visitedTags = new NativeBitArray(grid.Nodes.Length, Allocator.Persistent);
 
-            int width = (int)Mathf.Sqrt(visitedTags.Length);
-
-            Node targetNode = null;
-            int fieldIndex;
-            NativeFieldData fieldData;
-
-            targetNode = NavigationHelper.SetTargetNode(grid, targetPoint);
-
-            // sw1.Stop();
-            // Debug.Log($"Target node complete: task time({sw1.ElapsedMilliseconds}ms), all time({sw0.ElapsedMilliseconds}ms), start create field");
-            // sw1.Restart();
-
-            // Debug.Log(floor.Grid.Length);
-
-            lock (fieldsLock)
-            {
-                if (!emptyFields.TryPop(out fieldIndex))
-                {
-                    fieldIndex = Fields.Count;
-                    Fields.Add(new UnitsInField());
-
-                    int len = grid.Nodes.Length;
-                    FieldDatas.Add(new NativeFieldData(
-                        new NativeArray<int>(len, Allocator.Persistent),
-                        new NativeArray<float2>(len, Allocator.Persistent)));
-                }
-
-                fieldData = FieldDatas[fieldIndex];
-            }
-
-            CreateNodesField(fieldData.Cost, fieldData.Vector);
-
-            // Debug.Log($"fieldIndex = {fieldIndex}");
-
-            // sw1.Stop();
-            // Debug.Log($"Create field complete: task time({sw1.ElapsedMilliseconds}ms), all time({sw0.ElapsedMilliseconds}ms), start fill field");
-            // sw1.Restart();
-
-            FillField(visitedTags, width, targetNode.ID, fieldData); // FillField(visitedTags, ref targetNode, fieldIndex);
-
-            // sw1.Stop();
-            // Debug.Log($"Field complete: task time({sw1.ElapsedMilliseconds}ms), all time({sw0.ElapsedMilliseconds}ms), start create vectors");
-            // sw1.Restart();
-
             try
             {
+                int width = (int)Mathf.Sqrt(visitedTags.Length);
+
+                int fieldIndex;
+                NativeFieldData fieldData;
+
+                Node targetNode = NavigationHelper.SetTargetNode(grid, targetPoint);
+
+                // sw1.Stop();
+                // Debug.Log($"Target node complete: task time({sw1.ElapsedMilliseconds}ms), all time({sw0.ElapsedMilliseconds}ms), start create field");
+                // sw1.Restart();
+
+                // Debug.Log(floor.Grid.Length);
+
+                lock (fieldsLock)
+                {
+                    if (!emptyFields.TryPop(out fieldIndex))
+                    {
+                        fieldIndex = Fields.Count;
+                        Fields.Add(new UnitsInField());
+
+                        int len = grid.Nodes.Length;
+                        FieldDatas.Add(new NativeFieldData(
+                            new NativeArray<int>(len, Allocator.Persistent),
+                            new NativeArray<float2>(len, Allocator.Persistent)));
+                    }
+
+                    fieldData = FieldDatas[fieldIndex];
+                }
+
+                CreateNodesField(fieldData.Cost, fieldData.Vector);
+
+                // Debug.Log($"fieldIndex = {fieldIndex}");
+
+                // sw1.Stop();
+                // Debug.Log($"Create field complete: task time({sw1.ElapsedMilliseconds}ms), all time({sw0.ElapsedMilliseconds}ms), start fill field");
+                // sw1.Restart();
+
+                FillField(visitedTags, width, targetNode.ID, fieldData); // FillField(visitedTags, ref targetNode, fieldIndex);
+
+                // sw1.Stop();
+                // Debug.Log($"Field complete: task time({sw1.ElapsedMilliseconds}ms), all time({sw0.ElapsedMilliseconds}ms), start create vectors");
+                // sw1.Restart();
+
                 CreateVectors(visitedTags, width, fieldData);
 
                 // sw1.Stop();
@@ -158,19 +159,15 @@ public class FlowField_Navigation
 
                 // Debug.Log($"Smooth vectors complete: task time({sw1.ElapsedMilliseconds}ms), all time({sw0.ElapsedMilliseconds}ms)");
                 // Debug.Log($"All complete: all time {sw0.ElapsedMilliseconds}ms");
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError(ex);
+
+                // Debug.Log($"Return field index: oll time {sw0.ElapsedMilliseconds}ms");
+
+                return fieldIndex;
             }
             finally
             {
                 visitedTags.Dispose();
             }
-
-            // Debug.Log($"Return field index: oll time {sw0.ElapsedMilliseconds}ms");
-
-            return fieldIndex;
         });
     }
 
@@ -405,34 +402,13 @@ public class FlowField_Navigation
         handle.Complete(); 
     }
 
-    /*private void SmoothVectors(int fieldIndex)
+    public void SyncNode(Node node)
     {
-        Parallel.For(0, floor.Grid.Length, i =>
+        lock (clearLock)
         {
-            if (visitedTags[i] != globalQueryId) return;
-
-            Node node = floor.Grid[i];
-            Vector2 sum = Vector2.zero;
-            int count = 0;
-
-            for (int j = 0; j < node.NeighborsNode.Length; j++)
-            {
-                var neighbor = node.NeighborsNode[j];
-
-                if (neighbor == null || neighbor.IsSizeClear[0] == false) continue;
-
-                //sum += neighbor.FieldDatas[fieldIndex].Vector;
-            }
-
-            if (count > 0)
-                node.FieldDatas[fieldIndex] = new FieldData(node.FieldDatas[fieldIndex].Cost, node.FieldDatas[fieldIndex].Vector + sum / count);
-        });
-    }*/
-
-    public void SetFieldClearData(int index, bool isClear, bool[] isSizeClear)
-    {
-        FieldClearData.IsClear.Set(index, isClear);
-        FieldClearData.IsSizeClear.Set(index, isSizeClear[0]);
+            FieldClearData.IsClear.Set(node.ID, node.IsClear);
+            FieldClearData.IsSizeClear.Set(node.ID, node.IsSizeClear[0]);
+        }
     }
 
     public FlowField_Navigation(Grid grid)

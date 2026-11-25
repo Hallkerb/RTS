@@ -196,6 +196,8 @@ public class Grid : MonoBehaviour
                 break;
         }
 
+        List<Section> sections = new List<Section>();
+
         await Task.Run(() => 
         {
             float unitRadius = unitsRadius[0];
@@ -213,8 +215,6 @@ public class Grid : MonoBehaviour
                 new Vector2(minX, maxY),
                 new Vector2(maxX, minY)
             };
-
-            List<Section> sections = new List<Section>();
 
             var uniqueSections = corners
                 .Select(corner => Sections.FirstOrDefault(s => s.IsInside(corner)))
@@ -266,10 +266,18 @@ public class Grid : MonoBehaviour
                 }
             }
         });
+
+        foreach (var section in sections)
+            section.MarkChanged(isblock);
+
+        foreach (var section in sections)
+            section.RaiseCollidersChanged(isblock);
     }
 
     private void ExecuteBoxBlocking((Section section, Vector2 position, Vector2 size, int startRow, int endRow, int startCol, int endCol, int nodesPerSide, bool isblock) data)
     {
+        var flowField = NavigationManager.Instance.GetFlowField();
+
         Parallel.For(data.startRow, data.endRow + 1, row =>
         {
             for (int col = data.startCol; col <= data.endCol; col++)
@@ -281,13 +289,15 @@ public class Grid : MonoBehaviour
                 bool covers = GeometryUtils.IsInside(node.Position, node.Size, data.position, data.size);
                 node.BlockNode(covers, true, data.isblock);
 
-                NavigationManager.Instance.GetFlowField().SetFieldClearData(node.ID, node.IsClear, node.IsSizeClear);
+                flowField.SyncNode(node);
             }
         });
     }
 
     private void ExecuteCircleBlocking((Section section, Vector2 center, float radius, float padding, int startRow, int endRow, int startCol, int endCol, int nodesPerSide, bool isblock) data)
     {
+        var flowField = NavigationManager.Instance.GetFlowField();
+
         float objR2 = data.radius * data.radius;
         float padR = data.radius + data.padding;
         float padR2 = padR * padR;
@@ -302,7 +312,7 @@ public class Grid : MonoBehaviour
 
                 node.BlockNode(distSqr <= objR2, distSqr <= padR2, data.isblock);
 
-                NavigationManager.Instance.GetFlowField().SetFieldClearData(node.ID, node.IsClear, node.IsSizeClear);
+                flowField.SyncNode(node);
             }
         });
     }

@@ -12,7 +12,6 @@ public abstract class Unit : Entity, IMovable, IAttackable
     private EnemyScanner enemyScanner = new EnemyScanner();
 
     protected Transform Body;
-    protected UnitLineRenderer unitLineRenderer;
 
     protected Queue<(Action task, Entity target)> Tasks { get; private set; } = new Queue<(Action task, Entity target)>();
 
@@ -78,7 +77,6 @@ public abstract class Unit : Entity, IMovable, IAttackable
         navigationManager = FindFirstObjectByType<NavigationManager>();
 
         Body = transform.Find("Body");
-        unitLineRenderer = GetComponent<UnitLineRenderer>();
 
         moveLayerMask = GetLayerMask();
     }
@@ -86,6 +84,8 @@ public abstract class Unit : Entity, IMovable, IAttackable
     protected override void Start()
     {
         base.Start();
+
+        if(!NetworkServer.active) return;
 
         navigation = new AStar_Navigation(Grid.Instance, this);
     }
@@ -102,6 +102,37 @@ public abstract class Unit : Entity, IMovable, IAttackable
             else if (enemyScanner.EnemySearch == false)
                 enemyScanner.SearchCoroutine = StartCoroutine(enemyScanner.SearchEnemy(transform.position, ViewingRadius, PlayerID, (entity) => SetAttackTask(entity), Tasks));
         }
+    }
+
+    [Command]
+    public void CmdRequestUnitNavigation(int playerID)
+    {
+        if (playerID == PlayerID)
+        {
+            HandleNavigationChanged();
+
+            navigation.OnNavigationChanged -= HandleNavigationChanged;
+            navigation.OnNavigationChanged += HandleNavigationChanged;
+        }
+    }
+
+    [Command]
+    public void CmdRequestUnhandleNavigation(int playerID)
+    {
+        if (playerID == PlayerID)
+            navigation.OnNavigationChanged -= HandleNavigationChanged;
+    }
+
+    [Server]
+    private void HandleNavigationChanged()
+    {
+        TargetReceiveUnitNavigation(connectionToClient, navigation.GetWayPoints());
+    }
+
+    [TargetRpc]
+    private void TargetReceiveUnitNavigation(NetworkConnection connection, Vector2[] wayPoints)
+    {
+        NavigationLineRenderer.Instance.SetNavigation(wayPoints);
     }
 
     private void StopSearchEnemy()
@@ -127,10 +158,7 @@ public abstract class Unit : Entity, IMovable, IAttackable
             case NavigationMode.FlowField:
                 if (fieldIndex.HasValue)
                 {
-                    navigation.WayPoints.Clear();
-
-                    if (NetworkServer.connections.TryGetValue(PlayerID, out NetworkConnectionToClient conn))
-                        unitLineRenderer.ResetLineRendererPosition(conn);
+                    navigation.Stop();
 
                     if (FieldIndex.HasValue)
                         navigationManager.RemoveUnitInField(this, FieldIndex.Value);
@@ -206,25 +234,13 @@ public abstract class Unit : Entity, IMovable, IAttackable
         Vector2 finalMove = Vector2.zero;
         Vector2 direction = Vector2.zero;
 
-        if (navigation.WayPoints.Count > 0)
+        if (navigation.TryGetWayPoint(out Vector2 wayPoint))
         {
-            Vector2 currentTarget = navigation.WayPoints[0];
-            direction = (currentTarget - (Vector2)transform.position).normalized;
+            direction = (wayPoint - (Vector2)transform.position).normalized;
 
-            NetworkConnectionToClient client = null;
-
-            if (NetworkServer.connections.TryGetValue(PlayerID, out NetworkConnectionToClient conn))
-                client = conn;
-
-            if (client != null)
-                unitLineRenderer.SetLineRendererPosition(client);
-
-            if (Vector2.Distance(transform.position, currentTarget) < 0.1f)
+            if (Vector2.Distance(transform.position, wayPoint) < 0.1f)
             {
-                navigation.WayPoints.RemoveAt(0);
-
-                if (client != null)
-                    unitLineRenderer.ReductionLineRendererPosition(client);
+                navigation.TryRemoveWayPoint();
             }
         }
         else if (FieldIndex.HasValue)
@@ -236,6 +252,7 @@ public abstract class Unit : Entity, IMovable, IAttackable
 
         transform.position += (Vector3)finalMove;
 
+        bool pathFinished = !FieldIndex.HasValue && !navigation.HasPath;
         bool targetClose = false;
 
         if (Target != null && Target.gameObject.activeSelf)
@@ -246,16 +263,13 @@ public abstract class Unit : Entity, IMovable, IAttackable
                             || (Vector2.Distance(transform.position, closetPoint) <= minDistanceToTarget);
         }
 
-        if (targetClose || Vector2.Distance(targetPos, transform.position) <= minDistanceToTarget)
+        if (targetClose || pathFinished || Vector2.Distance(targetPos, transform.position) <= minDistanceToTarget)
         {
             if (FieldIndex.HasValue)
                 navigationManager.RemoveUnitInField(this, FieldIndex.Value);
             else
             {
-                navigation.WayPoints.Clear();
-
-                if (NetworkServer.connections.TryGetValue(PlayerID, out NetworkConnectionToClient conn))
-                    unitLineRenderer.ResetLineRendererPosition(conn);
+                navigation.Stop();
             }
 
             FieldIndex = null;
@@ -335,9 +349,6 @@ public abstract class Unit : Entity, IMovable, IAttackable
             navigationManager.RemoveUnitInField(this, FieldIndex.Value);
 
         await navigation.SearchWayToTarget(transform.position, targetPos);
-
-        if (NetworkServer.connections.TryGetValue(PlayerID, out NetworkConnectionToClient conn))
-            unitLineRenderer.ReconstructLineRenderer(conn, navigation.WayPoints.ToArray());
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
@@ -500,6 +511,21 @@ public abstract class Unit : Entity, IMovable, IAttackable
         }
 
         return nearestEnemy;
+    }
+
+    [Server]
+    public override void Destruction()
+    {
+        navigation.OnNavigationChanged -= HandleNavigationChanged;
+        navigation.Stop();
+
+        if (FieldIndex.HasValue)
+        {
+            navigationManager.RemoveUnitInField(this, FieldIndex.Value);
+            FieldIndex = null;
+        }
+
+        base.Destruction();
     }
 
     public override void ResetState()

@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class PlayerController : MonoBehaviour
 {
+    public static PlayerController Instance;
+
     private Player player;
     private PlayerUnitsController playerUnitsController;
     private HighlightManager highlightManager;
@@ -36,8 +37,12 @@ public class PlayerController : MonoBehaviour
 
     public int PlayerID => player.ID;
 
+    public event Action OnUnitChooseChanged;
+
     void Awake()
     {
+        Instance = this;
+
         highlightManager = new HighlightManager(this);
         UserInterface = FindFirstObjectByType<UI>();
 
@@ -144,6 +149,8 @@ public class PlayerController : MonoBehaviour
 
         foreach (var key in UI.PanelKeys)
             UserInterface.QueueUI.ClosePanel(key);
+
+        OnUnitChooseChanged?.Invoke();
     }
 
     private void StartChoose()
@@ -199,6 +206,8 @@ public class PlayerController : MonoBehaviour
                     unit.ChangeLocalTarget -= ReactOnChangeLocalTarget;
                     unit.ChangeLocalTarget += ReactOnChangeLocalTarget;
                     unit.OnDeath += ReactOnDeathEntity;
+
+                    OnUnitChooseChanged?.Invoke();
                 }
                 else if (!choose)
                 {
@@ -206,6 +215,8 @@ public class PlayerController : MonoBehaviour
 
                     unit.ChangeLocalTarget -= ReactOnChangeLocalTarget;
                     unit.OnDeath -= ReactOnDeathEntity;
+
+                    OnUnitChooseChanged?.Invoke();
                 }
 
                 highlightManager.HighlightEnemy(unit, unit.Target, choose);
@@ -297,6 +308,8 @@ public class PlayerController : MonoBehaviour
         {
             case Unit unit:
                 UnitChoose.Remove(unit);
+
+                OnUnitChooseChanged?.Invoke();
                 break;
             case Building building:
                 BuildingChoose.Remove(building);
