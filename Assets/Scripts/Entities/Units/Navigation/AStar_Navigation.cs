@@ -29,6 +29,7 @@ public class AStar_Navigation
 
     private int searchVersion;
 
+    public bool IsSearching { get; private set; }
     public bool HasPath => WayPoints.Count > 0;
 
     public event Action OnNavigationChanged;
@@ -65,6 +66,8 @@ public class AStar_Navigation
 
     public async Task SearchWayToTarget(Vector2 startPos, Vector2 targetPoint)
     {
+        IsSearching = true;
+
         TargetPoint = targetPoint;
 
         int myVersion = ++searchVersion;
@@ -85,6 +88,8 @@ public class AStar_Navigation
 
         WayPoints = result.points;
         SetSections(result.sections);
+
+        IsSearching = false;
 
         OnNavigationChanged?.Invoke();
 
@@ -231,6 +236,8 @@ public class AStar_Navigation
 
     public void Stop()
     {
+        IsSearching = false;
+
         searchVersion++;
 
         WayPoints = new List<Vector2>();

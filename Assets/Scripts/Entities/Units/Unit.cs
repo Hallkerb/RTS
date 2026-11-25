@@ -252,7 +252,7 @@ public abstract class Unit : Entity, IMovable, IAttackable
 
         transform.position += (Vector3)finalMove;
 
-        bool pathFinished = !FieldIndex.HasValue && !navigation.HasPath;
+        bool pathFinished = !FieldIndex.HasValue && !navigation.HasPath && !navigation.IsSearching;
         bool targetClose = false;
 
         if (Target != null && Target.gameObject.activeSelf)
